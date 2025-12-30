@@ -38,6 +38,12 @@ SDK_ENV_VARS = [
     "API_TIMEOUT_MS",
     # Windows-specific: Git Bash path for Claude Code CLI
     "CLAUDE_CODE_GIT_BASH_PATH",
+    # AWS Bedrock support (native in Claude Agent SDK)
+    "CLAUDE_CODE_USE_BEDROCK",  # Enables Bedrock mode in SDK
+    "AWS_PROFILE",               # AWS profile for credentials
+    "AWS_REGION",                # AWS region for Bedrock
+    "AWS_ACCESS_KEY_ID",         # AWS credentials (if not using profile)
+    "AWS_SECRET_ACCESS_KEY",     # AWS credentials (if not using profile)
 ]
 
 
