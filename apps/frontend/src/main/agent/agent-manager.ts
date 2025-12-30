@@ -127,10 +127,8 @@ export class AgentManager extends EventEmitter {
       args.push('--spec-dir', specDir);
     }
 
-    // Pass base branch if specified (ensures worktrees are created from the correct branch)
-    if (baseBranch) {
-      args.push('--base-branch', baseBranch);
-    }
+    // Note: --base-branch is NOT passed to spec_runner.py as it doesn't accept this argument
+    // Base branch is only used by run.py (the main build script)
 
     // Check if user requires review before coding
     if (!metadata?.requireReviewBeforeCoding) {

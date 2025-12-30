@@ -29,6 +29,12 @@ SDK_ENV_VARS = [
     "DISABLE_TELEMETRY",
     "DISABLE_COST_WARNINGS",
     "API_TIMEOUT_MS",
+    # AWS Bedrock support (native in Claude Agent SDK)
+    "CLAUDE_CODE_USE_BEDROCK",  # Enables Bedrock mode in SDK
+    "AWS_PROFILE",               # AWS profile for credentials
+    "AWS_REGION",                # AWS region for Bedrock
+    "AWS_ACCESS_KEY_ID",         # AWS credentials (if not using profile)
+    "AWS_SECRET_ACCESS_KEY",     # AWS credentials (if not using profile)
 ]
 
 
