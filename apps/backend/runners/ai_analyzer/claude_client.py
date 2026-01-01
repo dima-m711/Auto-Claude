@@ -13,11 +13,14 @@ try:
 except ImportError:
     CLAUDE_SDK_AVAILABLE = False
 
+# Import for model resolution
+from phase_config import resolve_model_id
+
 
 class ClaudeAnalysisClient:
     """Wrapper for Claude SDK client with analysis-specific configuration."""
 
-    DEFAULT_MODEL = "claude-sonnet-4-5-20250929"
+    DEFAULT_MODEL = "sonnet"
     ALLOWED_TOOLS = ["Read", "Glob", "Grep"]
     MAX_TURNS = 50
 
@@ -110,7 +113,7 @@ class ClaudeAnalysisClient:
 
         return ClaudeSDKClient(
             options=ClaudeAgentOptions(
-                model=self.DEFAULT_MODEL,
+                model=resolve_model_id(self.DEFAULT_MODEL),
                 system_prompt=system_prompt,
                 allowed_tools=self.ALLOWED_TOOLS,
                 max_turns=self.MAX_TURNS,

@@ -7,15 +7,52 @@ Reads configuration from task_metadata.json and provides resolved model IDs.
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Literal, TypedDict
 
 # Model shorthand to full model ID mapping
+# NOTE: This map contains Bedrock model IDs by default for backward compatibility.
+# Use resolve_model_id() or get_model_id_for_shorthand() for automatic
+# Bedrock vs Anthropic API selection based on CLAUDE_CODE_USE_BEDROCK.
 MODEL_ID_MAP: dict[str, str] = {
     "opus": "us.anthropic.claude-opus-4-5-20251101-v1:0",
     "sonnet": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
     "haiku": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
 }
+
+
+def get_model_id_for_shorthand(shorthand: str) -> str:
+    """
+    Get the correct model ID for a shorthand based on environment.
+
+    When CLAUDE_CODE_USE_BEDROCK=1, returns Bedrock model IDs.
+    Otherwise, returns Anthropic API model IDs.
+
+    Args:
+        shorthand: Model shorthand (haiku, sonnet, opus)
+
+    Returns:
+        Full model ID (Bedrock format or Anthropic API format)
+    """
+    use_bedrock = os.environ.get("CLAUDE_CODE_USE_BEDROCK") == "1"
+
+    if use_bedrock:
+        # Bedrock model IDs
+        BEDROCK_MODEL_MAP = {
+            "haiku": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+            "sonnet": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+            "opus": "us.anthropic.claude-opus-4-5-20251101-v1:0",
+        }
+        return BEDROCK_MODEL_MAP.get(shorthand, BEDROCK_MODEL_MAP["sonnet"])
+    else:
+        # Anthropic API model IDs
+        ANTHROPIC_MODEL_MAP = {
+            "haiku": "claude-haiku-4-5-20251001",
+            "sonnet": "claude-sonnet-4-5-20250929",
+            "opus": "claude-opus-4-5-20251101",
+        }
+        return ANTHROPIC_MODEL_MAP.get(shorthand, ANTHROPIC_MODEL_MAP["sonnet"])
 
 # Thinking level to budget tokens mapping (None = no extended thinking)
 # Values must match auto-claude-ui/src/shared/constants/models.ts THINKING_BUDGET_MAP
@@ -94,17 +131,28 @@ def resolve_model_id(model: str) -> str:
     Resolve a model shorthand (haiku, sonnet, opus) to a full model ID.
     If the model is already a full ID, return it unchanged.
 
+    Automatically uses Bedrock or Anthropic API format based on
+    CLAUDE_CODE_USE_BEDROCK environment variable.
+
     Args:
         model: Model shorthand or full ID
 
     Returns:
-        Full Claude model ID
+        Full Claude model ID (Bedrock or Anthropic API format)
     """
+    # If already a full model ID (contains dots or colons), return as-is
+    if "." in model or ":" in model:
+        return model
+
     # Check if it's a shorthand
+    if model in ["haiku", "sonnet", "opus"]:
+        return get_model_id_for_shorthand(model)
+
+    # Fallback to checking old MODEL_ID_MAP for backward compatibility
     if model in MODEL_ID_MAP:
         return MODEL_ID_MAP[model]
 
-    # Already a full model ID
+    # Unknown - return as-is
     return model
 
 

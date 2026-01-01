@@ -10,7 +10,7 @@ import type {
   InsightsToolUsage,
   InsightsModelConfig
 } from '../../shared/types';
-import { MODEL_ID_MAP } from '../../shared/constants';
+import { getModelIdForShorthand } from '../../shared/constants';
 import { InsightsConfig } from './config';
 import { detectRateLimit, createSDKRateLimitInfo } from '../rate-limit-detector';
 
@@ -112,7 +112,7 @@ export class InsightsExecutor extends EventEmitter {
 
     // Add model config if provided
     if (modelConfig) {
-      const modelId = MODEL_ID_MAP[modelConfig.model] || MODEL_ID_MAP['sonnet'];
+      const modelId = getModelIdForShorthand(modelConfig.model);
       args.push('--model', modelId);
       args.push('--thinking-level', modelConfig.thinkingLevel);
     }

@@ -32,6 +32,7 @@ except ImportError:
     ClaudeSDKClient = None
 
 from core.auth import ensure_claude_code_oauth_token, get_auth_token
+from phase_config import resolve_model_id
 from debug import (
     debug,
     debug_detailed,
@@ -132,7 +133,7 @@ async def run_with_sdk(
     project_dir: str,
     message: str,
     history: list,
-    model: str = "claude-sonnet-4-5-20250929",
+    model: str = "sonnet",
     thinking_level: str = "medium",
 ) -> None:
     """Run the chat using Claude SDK with streaming."""
@@ -169,10 +170,14 @@ async def run_with_sdk(
 
 Current question: {message}"""
 
+    # Resolve model shorthand to full model ID (Bedrock or Anthropic)
+    resolved_model = resolve_model_id(model)
+
     debug(
         "insights_runner",
         "Using model configuration",
         model=model,
+        resolved_model=resolved_model,
         thinking_level=thinking_level,
     )
 
@@ -180,7 +185,7 @@ Current question: {message}"""
         # Create Claude SDK client with appropriate settings for insights
         client = ClaudeSDKClient(
             options=ClaudeAgentOptions(
-                model=model,  # Use configured model
+                model=resolved_model,  # Use resolved model ID
                 system_prompt=system_prompt,
                 allowed_tools=[
                     "Read",
@@ -336,8 +341,8 @@ def main():
     )
     parser.add_argument(
         "--model",
-        default="claude-sonnet-4-5-20250929",
-        help="Claude model ID (default: claude-sonnet-4-5-20250929)",
+        default="sonnet",
+        help="Claude model shorthand or full ID (default: sonnet)",
     )
     parser.add_argument(
         "--thinking-level",

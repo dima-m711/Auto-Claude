@@ -55,8 +55,8 @@ def main():
     parser.add_argument(
         "--model",
         type=str,
-        default="claude-opus-4-5-20251101",
-        help="Model to use (default: claude-opus-4-5-20251101)",
+        default="opus",
+        help="Model shorthand or full ID (default: opus)",
     )
     parser.add_argument(
         "--thinking-level",

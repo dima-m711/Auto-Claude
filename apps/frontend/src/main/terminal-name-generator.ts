@@ -6,6 +6,7 @@ import { EventEmitter } from 'events';
 import { detectRateLimit, createSDKRateLimitInfo, getProfileEnv } from './rate-limit-detector';
 import { parsePythonCommand } from './python-detector';
 import { pythonEnvManager } from './python-env-manager';
+import { getModelIdForShorthand } from '../shared/constants/models';
 
 /**
  * Debug logging - only logs when DEBUG=true or in development mode
@@ -244,6 +245,8 @@ Output ONLY the name (2-3 words), nothing else. Examples: "npm build", "git logs
   private createGenerationScript(prompt: string): string {
     // Escape the prompt for Python string - use JSON.stringify for safe escaping
     const escapedPrompt = JSON.stringify(prompt);
+    // Resolve model ID for Bedrock/Anthropic compatibility
+    const resolvedModel = getModelIdForShorthand('haiku');
 
     return `
 import asyncio
@@ -258,7 +261,7 @@ async def generate_name():
         # Create a minimal client for simple text generation (no tools needed)
         client = ClaudeSDKClient(
             options=ClaudeAgentOptions(
-                model="claude-haiku-4-5",
+                model="${resolvedModel}",
                 system_prompt="You generate very short, concise terminal names (2-3 words MAX). Output ONLY the name, nothing else. No quotes, no explanation, no preamble. Keep it as short as possible while being descriptive.",
                 max_turns=1,
             )

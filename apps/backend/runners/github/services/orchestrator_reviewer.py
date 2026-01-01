@@ -21,7 +21,7 @@ DEBUG_MODE = os.environ.get("DEBUG", "").lower() in ("true", "1", "yes")
 
 try:
     from ...core.client import create_client
-    from ...phase_config import get_thinking_budget
+    from ...phase_config import get_thinking_budget, resolve_model_id
     from ..context_gatherer import PRContext
     from ..models import (
         GitHubRunnerConfig,
@@ -188,7 +188,7 @@ class OrchestratorReviewer:
             )
 
             # Use model and thinking level from config (user settings)
-            model = self.config.model or "claude-sonnet-4-5-20250929"
+            model = resolve_model_id(self.config.model or "sonnet")
             thinking_level = self.config.thinking_level or "medium"
             thinking_budget = get_thinking_budget(thinking_level)
 
