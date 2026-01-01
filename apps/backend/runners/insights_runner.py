@@ -34,6 +34,7 @@ except ImportError:
     ClaudeSDKClient = None
 
 from core.auth import ensure_claude_code_oauth_token, get_auth_token
+from phase_config import resolve_model_id
 from debug import (
     debug,
     debug_detailed,
@@ -172,10 +173,14 @@ async def run_with_sdk(
 
 Current question: {message}"""
 
+    # Resolve model shorthand to full model ID (Bedrock or Anthropic)
+    resolved_model = resolve_model_id(model)
+
     debug(
         "insights_runner",
         "Using model configuration",
         model=model,
+        resolved_model=resolved_model,
         thinking_level=thinking_level,
     )
 
@@ -183,7 +188,7 @@ Current question: {message}"""
         # Create Claude SDK client with appropriate settings for insights
         client = ClaudeSDKClient(
             options=ClaudeAgentOptions(
-                model=resolve_model_id(model),  # Resolve via API Profile if configured
+                model=resolved_model,  # Use resolved model ID
                 system_prompt=system_prompt,
                 allowed_tools=[
                     "Read",

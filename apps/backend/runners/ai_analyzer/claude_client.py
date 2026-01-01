@@ -14,6 +14,9 @@ try:
 except ImportError:
     CLAUDE_SDK_AVAILABLE = False
 
+# Import for model resolution
+from phase_config import resolve_model_id
+
 
 class ClaudeAnalysisClient:
     """Wrapper for Claude SDK client with analysis-specific configuration."""

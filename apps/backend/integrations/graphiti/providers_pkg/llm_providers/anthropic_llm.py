@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from graphiti_config import GraphitiConfig
 
 from ..exceptions import ProviderError, ProviderNotInstalled
+from phase_config import resolve_model_id
 
 
 def create_anthropic_llm_client(config: "GraphitiConfig") -> Any:
@@ -40,9 +41,12 @@ def create_anthropic_llm_client(config: "GraphitiConfig") -> Any:
     if not config.anthropic_api_key:
         raise ProviderError("Anthropic provider requires ANTHROPIC_API_KEY")
 
+    # Resolve model shorthand to full model ID (Bedrock or Anthropic)
+    resolved_model = resolve_model_id(config.anthropic_model)
+
     llm_config = LLMConfig(
         api_key=config.anthropic_api_key,
-        model=config.anthropic_model,
+        model=resolved_model,
     )
 
     return AnthropicClient(config=llm_config)

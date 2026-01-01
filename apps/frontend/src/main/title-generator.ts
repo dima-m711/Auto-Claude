@@ -11,6 +11,7 @@ import { EventEmitter } from 'events';
 import { detectRateLimit, createSDKRateLimitInfo, getProfileEnv } from './rate-limit-detector';
 import { parsePythonCommand, getValidatedPythonPath } from './python-detector';
 import { getConfiguredPythonPath } from './python-env-manager';
+import { getModelIdForShorthand } from '../shared/constants/models';
 
 /**
  * Debug logging - only logs when DEBUG=true or in development mode
@@ -235,6 +236,8 @@ Title:`;
   private createGenerationScript(prompt: string): string {
     // Escape the prompt for Python string - use JSON.stringify for safe escaping
     const escapedPrompt = JSON.stringify(prompt);
+    // Resolve model ID for Bedrock/Anthropic compatibility
+    const resolvedModel = getModelIdForShorthand('haiku');
 
     return `
 import asyncio
@@ -249,7 +252,7 @@ async def generate_title():
         # Create a minimal client for simple text generation (no tools needed)
         client = ClaudeSDKClient(
             options=ClaudeAgentOptions(
-                model="claude-haiku-4-5",
+                model="${resolvedModel}",
                 system_prompt="You generate short, concise task titles (3-7 words). Output ONLY the title, nothing else. No quotes, no explanation, no preamble.",
                 max_turns=1,
             )

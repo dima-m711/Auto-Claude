@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Optional
 
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
+from phase_config import resolve_model_id
 
 # Linear status constants (matching Valma AI team setup)
 STATUS_TODO = "Todo"

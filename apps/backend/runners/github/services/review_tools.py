@@ -17,6 +17,7 @@ from pathlib import Path
 try:
     from ...analysis.test_discovery import TestDiscovery
     from ...core.client import create_client
+    from ...phase_config import resolve_model_id
     from ..context_gatherer import PRContext
     from ..models import PRReviewFinding, ReviewSeverity
     from .category_utils import map_category
@@ -26,6 +27,7 @@ except (ImportError, ValueError, SystemError):
     from context_gatherer import PRContext
     from core.client import create_client
     from models import PRReviewFinding, ReviewSeverity
+    from phase_config import resolve_model_id
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +76,7 @@ async def spawn_security_review(
     pr_context: PRContext,
     project_dir: Path,
     github_dir: Path,
-    model: str = "claude-sonnet-4-5-20250929",
+    model: str = "sonnet",
 ) -> list[PRReviewFinding]:
     """
     Spawn a focused security review subagent for specific files.
@@ -127,7 +129,7 @@ async def spawn_security_review(
         client = create_client(
             project_dir=project_root,
             spec_dir=github_dir,
-            model=model,
+            model=resolve_model_id(model),
             agent_type="pr_reviewer",  # Read-only - no bash, no edits
         )
 
@@ -163,7 +165,7 @@ async def spawn_quality_review(
     pr_context: PRContext,
     project_dir: Path,
     github_dir: Path,
-    model: str = "claude-sonnet-4-5-20250929",
+    model: str = "sonnet",
 ) -> list[PRReviewFinding]:
     """
     Spawn a focused code quality review subagent for specific files.
@@ -213,7 +215,7 @@ async def spawn_quality_review(
         client = create_client(
             project_dir=project_root,
             spec_dir=github_dir,
-            model=model,
+            model=resolve_model_id(model),
             agent_type="pr_reviewer",  # Read-only - no bash, no edits
         )
 
@@ -245,7 +247,7 @@ async def spawn_deep_analysis(
     pr_context: PRContext,
     project_dir: Path,
     github_dir: Path,
-    model: str = "claude-sonnet-4-5-20250929",
+    model: str = "sonnet",
 ) -> list[PRReviewFinding]:
     """
     Spawn a deep analysis subagent to investigate a specific concern.
@@ -308,7 +310,7 @@ Output findings in JSON format:
         client = create_client(
             project_dir=project_root,
             spec_dir=github_dir,
-            model=model,
+            model=resolve_model_id(model),
             agent_type="pr_reviewer",  # Read-only - no bash, no edits
         )
 

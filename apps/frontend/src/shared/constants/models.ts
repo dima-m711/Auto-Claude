@@ -15,12 +15,37 @@ export const AVAILABLE_MODELS = [
   { value: 'haiku', label: 'Claude Haiku 4.5' }
 ] as const;
 
-// Maps model shorthand to actual Claude model IDs
-export const MODEL_ID_MAP: Record<string, string> = {
+// Maps model shorthand to Anthropic API model IDs
+export const ANTHROPIC_MODEL_ID_MAP: Record<string, string> = {
   opus: 'claude-opus-4-5-20251101',
   sonnet: 'claude-sonnet-4-5-20250929',
   haiku: 'claude-haiku-4-5-20251001'
 } as const;
+
+// Maps model shorthand to AWS Bedrock model IDs
+export const BEDROCK_MODEL_ID_MAP: Record<string, string> = {
+  opus: 'us.anthropic.claude-opus-4-5-20251101-v1:0',
+  sonnet: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+  haiku: 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+} as const;
+
+// Legacy MODEL_ID_MAP for backward compatibility (defaults to Anthropic)
+export const MODEL_ID_MAP: Record<string, string> = ANTHROPIC_MODEL_ID_MAP;
+
+/**
+ * Get the correct model ID for a shorthand based on environment.
+ * When CLAUDE_CODE_USE_BEDROCK=1, returns Bedrock model IDs.
+ * Otherwise, returns Anthropic API model IDs.
+ */
+export function getModelIdForShorthand(shorthand: string): string {
+  const useBedrock = process.env.CLAUDE_CODE_USE_BEDROCK === '1';
+
+  if (useBedrock) {
+    return BEDROCK_MODEL_ID_MAP[shorthand as keyof typeof BEDROCK_MODEL_ID_MAP] || BEDROCK_MODEL_ID_MAP.sonnet;
+  } else {
+    return ANTHROPIC_MODEL_ID_MAP[shorthand as keyof typeof ANTHROPIC_MODEL_ID_MAP] || ANTHROPIC_MODEL_ID_MAP.sonnet;
+  }
+}
 
 // Maps thinking levels to budget tokens (null = no extended thinking)
 export const THINKING_BUDGET_MAP: Record<string, number | null> = {
