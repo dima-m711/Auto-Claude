@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Textarea } from '../../ui/textarea';
-import { Alert, AlertDescription } from '../../ui/alert';
 
 interface PlanReviewProps {
   task: Task;
@@ -169,41 +168,41 @@ export function PlanReview({
 
       {/* Action Buttons */}
       {!showFeedback && (
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="default"
-            onClick={onApprove}
-            className="flex-1"
-          >
-            <Check className="h-4 w-4 mr-2" />
-            {t('tasks:planReview.actions.approve')}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onEdit}
-          >
-            <Edit2 className="h-4 w-4 mr-2" />
-            {t('tasks:planReview.actions.edit')}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowFeedback(true)}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {t('tasks:planReview.actions.requestChanges')}
-          </Button>
-        </div>
-      )}
+        <>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="default"
+              onClick={onApprove}
+              className="flex-1"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              {t('tasks:planReview.actions.approve')}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onEdit}
+            >
+              <Edit2 className="h-4 w-4 mr-2" />
+              {t('tasks:planReview.actions.edit')}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowFeedback(true)}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              {t('tasks:planReview.actions.requestChanges')}
+            </Button>
+          </div>
 
-      {/* Info Alert */}
-      <Alert>
-        <AlertDescription className="text-xs">
-          {t('tasks:planReview.infoMessage')}
-        </AlertDescription>
-      </Alert>
+          {/* Info Message */}
+          <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg border border-border">
+            {t('tasks:planReview.infoMessage')}
+          </div>
+        </>
+      )}
     </div>
   );
 }
