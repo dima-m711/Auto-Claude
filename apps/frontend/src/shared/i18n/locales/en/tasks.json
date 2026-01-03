@@ -82,5 +82,39 @@
       "code": "Code",
       "qa": "QA"
     }
+  },
+  "planReview": {
+    "title": "Review Implementation Plan",
+    "approach": "Implementation Approach",
+    "phases": "Implementation Phases",
+    "phase": "Phase",
+    "subtasks": "subtasks",
+    "acceptance": "Acceptance Criteria",
+    "workflow": "Workflow",
+    "services": "Services",
+    "noDescription": "No description provided",
+    "feedbackTitle": "Provide Feedback",
+    "feedbackPlaceholder": "Describe what needs to change in this plan...",
+    "infoMessage": "Review the implementation plan and approve to start coding, or provide feedback to request changes.",
+    "actions": {
+      "approve": "Approve & Start Coding",
+      "reject": "Reject Plan",
+      "edit": "Edit Plan",
+      "regenerate": "Regenerate Plan",
+      "requestChanges": "Request Changes"
+    },
+    "editDialog": {
+      "title": "Edit Implementation Plan",
+      "description": "Description",
+      "workflowType": "Workflow Type",
+      "acceptanceCriteria": "Acceptance Criteria",
+      "addCriterion": "Add Criterion",
+      "criterionPlaceholder": "Enter acceptance criterion...",
+      "phases": "Phases",
+      "phasesCount": "phases in this plan",
+      "phasesNote": "Phase editing is not yet supported. You can regenerate the plan with feedback to modify phases.",
+      "save": "Save Changes",
+      "saving": "Saving..."
+    }
   }
 }

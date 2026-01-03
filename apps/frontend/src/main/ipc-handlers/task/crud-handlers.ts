@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 import { IPC_CHANNELS, AUTO_BUILD_PATHS, getSpecsDir } from '../../../shared/constants';
-import type { IPCResult, Task, TaskMetadata } from '../../../shared/types';
+import type { IPCResult, Task, TaskMetadata, ImplementationPlan } from '../../../shared/types';
 import path from 'path';
 import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from 'fs';
 import { projectStore } from '../../project-store';
@@ -423,6 +423,129 @@ export function registerTaskCRUDHandlers(agentManager: AgentManager): void {
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+    }
+  );
+
+  /**
+   * Get implementation plan for a task
+   */
+  ipcMain.handle(
+    IPC_CHANNELS.TASK_GET_IMPLEMENTATION_PLAN,
+    async (_, taskId: string): Promise<IPCResult<ImplementationPlan>> => {
+      try {
+        const { task, project } = findTaskAndProject(taskId);
+
+        if (!task || !project) {
+          return { success: false, error: 'Task or project not found' };
+        }
+
+        const autoBuildDir = project.autoBuildPath || '.auto-claude';
+        const planPath = path.join(project.path, autoBuildDir, 'specs', task.specId, AUTO_BUILD_PATHS.IMPLEMENTATION_PLAN);
+
+        if (!existsSync(planPath)) {
+          return { success: false, error: 'Implementation plan file not found' };
+        }
+
+        const planContent = readFileSync(planPath, 'utf-8');
+        const plan: ImplementationPlan = JSON.parse(planContent);
+
+        return { success: true, data: plan };
+      } catch (error) {
+        console.error('[TASK_GET_IMPLEMENTATION_PLAN] Error:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to load implementation plan'
+        };
+      }
+    }
+  );
+
+  /**
+   * Update implementation plan for a task
+   */
+  ipcMain.handle(
+    IPC_CHANNELS.TASK_UPDATE_IMPLEMENTATION_PLAN,
+    async (_, taskId: string, updates: Partial<ImplementationPlan>): Promise<IPCResult> => {
+      try {
+        const { task, project } = findTaskAndProject(taskId);
+
+        if (!task || !project) {
+          return { success: false, error: 'Task or project not found' };
+        }
+
+        const autoBuildDir = project.autoBuildPath || '.auto-claude';
+        const planPath = path.join(project.path, autoBuildDir, 'specs', task.specId, AUTO_BUILD_PATHS.IMPLEMENTATION_PLAN);
+
+        if (!existsSync(planPath)) {
+          return { success: false, error: 'Implementation plan file not found' };
+        }
+
+        // Read existing plan
+        const planContent = readFileSync(planPath, 'utf-8');
+        const plan: ImplementationPlan = JSON.parse(planContent);
+
+        // Merge updates
+        const updatedPlan: ImplementationPlan = {
+          ...plan,
+          ...updates,
+          updated_at: new Date().toISOString()
+        };
+
+        // Write back to file
+        writeFileSync(planPath, JSON.stringify(updatedPlan, null, 2));
+
+        return { success: true };
+      } catch (error) {
+        console.error('[TASK_UPDATE_IMPLEMENTATION_PLAN] Error:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to update implementation plan'
+        };
+      }
+    }
+  );
+
+  /**
+   * Regenerate implementation plan for a task
+   * Note: This triggers the planner agent to create a new plan
+   */
+  ipcMain.handle(
+    IPC_CHANNELS.TASK_REGENERATE_PLAN,
+    async (_, taskId: string, feedback: string): Promise<IPCResult> => {
+      try {
+        const { task, project } = findTaskAndProject(taskId);
+
+        if (!task || !project) {
+          return { success: false, error: 'Task or project not found' };
+        }
+
+        // Store feedback in a file for the planner agent to read
+        const autoBuildDir = project.autoBuildPath || '.auto-claude';
+        const specDir = path.join(project.path, autoBuildDir, 'specs', task.specId);
+        const feedbackPath = path.join(specDir, 'PLAN_FEEDBACK.md');
+
+        writeFileSync(feedbackPath, `# Plan Review Feedback\n\n${feedback}\n\nRequested at: ${new Date().toISOString()}\n`);
+
+        // TODO: Trigger planner agent to regenerate plan
+        // For now, just store the feedback. The backend Python code will need to handle this.
+        // This could be implemented by:
+        // 1. Setting task reviewReason to 'plan_review' and status to 'human_review'
+        // 2. When user approves (submitReview with approved=false and feedback),
+        //    the backend reads PLAN_FEEDBACK.md and re-runs the planner
+
+        return {
+          success: true,
+          data: {
+            message: 'Plan regeneration feedback saved. Please restart the task to regenerate the plan.'
+          }
+        };
+      } catch (error) {
+        console.error('[TASK_REGENERATE_PLAN] Error:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to save plan regeneration feedback'
         };
       }
     }

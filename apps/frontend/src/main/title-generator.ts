@@ -129,11 +129,12 @@ export class TitleGenerator extends EventEmitter {
     }
 
     const prompt = this.createTitlePrompt(description);
-    const script = this.createGenerationScript(prompt);
+
+    // Load environment variables FIRST to check CLAUDE_CODE_USE_BEDROCK
+    const autoBuildEnv = this.loadAutoBuildEnv();
+    const script = this.createGenerationScript(prompt, autoBuildEnv);
 
     debug('Generating title for description:', description.substring(0, 100) + '...');
-
-    const autoBuildEnv = this.loadAutoBuildEnv();
     debug('Environment loaded', {
       hasOAuthToken: !!autoBuildEnv.CLAUDE_CODE_OAUTH_TOKEN
     });
@@ -228,11 +229,12 @@ Title:`;
   /**
    * Create the Python script to generate title using Claude Agent SDK
    */
-  private createGenerationScript(prompt: string): string {
+  private createGenerationScript(prompt: string, env: Record<string, string>): string {
     // Escape the prompt for Python string - use JSON.stringify for safe escaping
     const escapedPrompt = JSON.stringify(prompt);
-    // Resolve model ID for Bedrock/Anthropic compatibility
-    const resolvedModel = getModelIdForShorthand('haiku');
+    // Resolve model ID for Bedrock/Anthropic compatibility using loaded env
+    const useBedrock = env.CLAUDE_CODE_USE_BEDROCK === '1';
+    const resolvedModel = this.resolveModelId('haiku', useBedrock);
 
     return `
 import asyncio
@@ -311,6 +313,27 @@ asyncio.run(generate_title())
     }
 
     return cleaned.trim();
+  }
+
+  /**
+   * Resolve model shorthand to full ID based on Bedrock flag
+   */
+  private resolveModelId(shorthand: string, useBedrock: boolean): string {
+    if (useBedrock) {
+      const BEDROCK_MODELS: Record<string, string> = {
+        'haiku': 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
+        'sonnet': 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+        'opus': 'us.anthropic.claude-opus-4-5-20251101-v1:0'
+      };
+      return BEDROCK_MODELS[shorthand] || BEDROCK_MODELS['sonnet'];
+    } else {
+      const ANTHROPIC_MODELS: Record<string, string> = {
+        'haiku': 'claude-haiku-4-5-20251001',
+        'sonnet': 'claude-sonnet-4-5-20250929',
+        'opus': 'claude-opus-4-5-20251101'
+      };
+      return ANTHROPIC_MODELS[shorthand] || ANTHROPIC_MODELS['sonnet'];
+    }
   }
 }
 

@@ -14,3 +14,5 @@ export { DiffViewDialog } from './DiffViewDialog';
 export { ConflictDetailsDialog } from './ConflictDetailsDialog';
 export { LoadingMessage, NoWorkspaceMessage, StagedInProjectMessage } from './WorkspaceMessages';
 export { getSeverityIcon, getSeverityVariant } from './utils';
+export { PlanReview } from './PlanReview';
+export { PlanEditDialog } from './PlanEditDialog';

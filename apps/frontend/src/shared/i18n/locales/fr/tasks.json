@@ -82,5 +82,39 @@
       "code": "Code",
       "qa": "QA"
     }
+  },
+  "planReview": {
+    "title": "Réviser le plan d'implémentation",
+    "approach": "Approche d'implémentation",
+    "phases": "Phases d'implémentation",
+    "phase": "Phase",
+    "subtasks": "sous-tâches",
+    "acceptance": "Critères d'acceptation",
+    "workflow": "Flux de travail",
+    "services": "Services",
+    "noDescription": "Aucune description fournie",
+    "feedbackTitle": "Fournir un retour",
+    "feedbackPlaceholder": "Décrivez ce qui doit changer dans ce plan...",
+    "infoMessage": "Révisez le plan d'implémentation et approuvez pour commencer le codage, ou fournissez des commentaires pour demander des modifications.",
+    "actions": {
+      "approve": "Approuver et commencer le codage",
+      "reject": "Rejeter le plan",
+      "edit": "Modifier le plan",
+      "regenerate": "Régénérer le plan",
+      "requestChanges": "Demander des modifications"
+    },
+    "editDialog": {
+      "title": "Modifier le plan d'implémentation",
+      "description": "Description",
+      "workflowType": "Type de flux de travail",
+      "acceptanceCriteria": "Critères d'acceptation",
+      "addCriterion": "Ajouter un critère",
+      "criterionPlaceholder": "Entrez le critère d'acceptation...",
+      "phases": "Phases",
+      "phasesCount": "phases dans ce plan",
+      "phasesNote": "La modification des phases n'est pas encore prise en charge. Vous pouvez régénérer le plan avec des commentaires pour modifier les phases.",
+      "save": "Enregistrer les modifications",
+      "saving": "Enregistrement..."
+    }
   }
 }
