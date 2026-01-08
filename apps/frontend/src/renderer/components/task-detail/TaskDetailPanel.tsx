@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Separator } from '../ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { ScrollArea } from '../ui/scroll-area';
@@ -14,7 +15,8 @@ import { TaskWarnings } from './TaskWarnings';
 import { TaskSubtasks } from './TaskSubtasks';
 import { TaskLogs } from './TaskLogs';
 import { TaskReview } from './TaskReview';
-import type { Task } from '../../../shared/types';
+import { PlanViewDialog } from './PlanViewDialog';
+import type { Task, ImplementationPlan } from '../../../shared/types';
 
 interface TaskDetailPanelProps {
   task: Task;
@@ -25,7 +27,28 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
   const state = useTaskDetail({ task });
   const _progress = calculateProgress(task.subtasks);
 
+  // Plan view state
+  const [showPlanDialog, setShowPlanDialog] = useState(false);
+  const [implementationPlan, setImplementationPlan] = useState<ImplementationPlan | null>(null);
+  const [isLoadingPlan, setIsLoadingPlan] = useState(false);
+
+  // Check if task has a plan (heuristic: if subtasks exist, plan exists)
+  const hasPlan = task.subtasks.length > 0;
+
   // Event Handlers
+  const handleViewPlan = async () => {
+    // Lazy load plan only when button is clicked
+    if (!implementationPlan) {
+      setIsLoadingPlan(true);
+      const result = await window.electronAPI.getImplementationPlan(task.id);
+      if (result.success && result.data) {
+        setImplementationPlan(result.data);
+      }
+      setIsLoadingPlan(false);
+    }
+    setShowPlanDialog(true);
+  };
+
   const handleStartStop = () => {
     if (state.isRunning && !state.isStuck) {
       stopTask(task.id);
@@ -125,8 +148,10 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
           isIncomplete={state.isIncomplete}
           taskProgress={state.taskProgress}
           isRunning={state.isRunning}
+          hasPlan={hasPlan}
           onClose={onClose}
           onEdit={() => state.setIsEditDialogOpen(true)}
+          onViewPlan={handleViewPlan}
         />
 
         <Separator />
@@ -260,6 +285,15 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
           task={task}
           open={state.isEditDialogOpen}
           onOpenChange={state.setIsEditDialogOpen}
+        />
+
+        {/* Plan View Dialog */}
+        <PlanViewDialog
+          open={showPlanDialog}
+          task={task}
+          plan={implementationPlan}
+          isLoading={isLoadingPlan}
+          onOpenChange={setShowPlanDialog}
         />
       </div>
     </TooltipProvider>

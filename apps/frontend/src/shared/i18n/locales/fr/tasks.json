@@ -116,5 +116,19 @@
       "save": "Enregistrer les modifications",
       "saving": "Enregistrement..."
     }
+  },
+  "planView": {
+    "title": "Plan d'implémentation",
+    "buttonTooltip": "Voir le plan d'implémentation",
+    "noPlanTooltip": "Aucun plan disponible",
+    "stats": {
+      "phases": "Phases",
+      "subtasks": "Sous-tâches",
+      "completed": "terminées",
+      "services": "Services"
+    },
+    "moreSubtasks": "sous-tâches supplémentaires",
+    "parallelism": "Exécution parallèle prise en charge",
+    "workers": "workers recommandés"
   }
 }

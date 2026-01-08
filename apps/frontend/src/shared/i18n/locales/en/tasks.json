@@ -116,5 +116,19 @@
       "save": "Save Changes",
       "saving": "Saving..."
     }
+  },
+  "planView": {
+    "title": "Implementation Plan",
+    "buttonTooltip": "View implementation plan",
+    "noPlanTooltip": "No plan available",
+    "stats": {
+      "phases": "Phases",
+      "subtasks": "Subtasks",
+      "completed": "completed",
+      "services": "Services"
+    },
+    "moreSubtasks": "more subtasks",
+    "parallelism": "Parallel execution supported",
+    "workers": "workers recommended"
   }
 }

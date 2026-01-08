@@ -1,4 +1,4 @@
-import { X, Pencil, AlertTriangle } from 'lucide-react';
+import { X, Pencil, AlertTriangle, FileText } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
@@ -12,8 +12,10 @@ interface TaskHeaderProps {
   isIncomplete: boolean;
   taskProgress: { completed: number; total: number };
   isRunning: boolean;
+  hasPlan: boolean;
   onClose: () => void;
   onEdit: () => void;
+  onViewPlan: () => void;
 }
 
 export function TaskHeader({
@@ -22,8 +24,10 @@ export function TaskHeader({
   isIncomplete,
   taskProgress,
   isRunning,
+  hasPlan,
   onClose,
-  onEdit
+  onEdit,
+  onViewPlan
 }: TaskHeaderProps) {
   return (
     <div className="flex items-start justify-between p-4 pb-3">
@@ -82,6 +86,24 @@ export function TaskHeader({
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0 -mr-1 -mt-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-primary/10 hover:text-primary transition-colors"
+                onClick={onViewPlan}
+                disabled={!hasPlan}
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {hasPlan ? 'View implementation plan' : 'No plan available'}
+          </TooltipContent>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <span>
