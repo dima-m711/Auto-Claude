@@ -22,6 +22,7 @@ from pathlib import Path
 
 # Import git command helper for centralized logging and allowlist compliance
 from core.git_executable import run_git
+from phase_config import resolve_model_id
 from ui import (
     Icons,
     bold,
@@ -1718,8 +1719,9 @@ CRITICAL RULES:
 - Ensure the output is complete and syntactically valid code"""
 
 # Model constants for AI merge two-tier strategy (ACS-194)
-MERGE_FAST_MODEL = "claude-haiku-4-5-20251001"  # Fast model for simple merges
-MERGE_CAPABLE_MODEL = "claude-sonnet-4-5-20250929"  # Capable model for complex merges
+# Use shorthands that get resolved via resolve_model_id() for Bedrock/Anthropic compatibility
+MERGE_FAST_MODEL_SHORTHAND = "haiku"  # Fast model for simple merges
+MERGE_CAPABLE_MODEL_SHORTHAND = "sonnet"  # Capable model for complex merges
 MERGE_FAST_THINKING = 1024  # Lower thinking for fast/simple merges
 MERGE_COMPLEX_THINKING = 16000  # Higher thinking for complex merges
 
@@ -1858,7 +1860,7 @@ def _strip_code_fences(content: str) -> str:
 async def _attempt_ai_merge(
     task: "ParallelMergeTask",
     prompt: str,
-    model: str = MERGE_FAST_MODEL,
+    model_shorthand: str = MERGE_FAST_MODEL_SHORTHAND,
     max_thinking_tokens: int = MERGE_FAST_THINKING,
 ) -> tuple[bool, str | None, str]:
     """
@@ -1867,7 +1869,7 @@ async def _attempt_ai_merge(
     Args:
         task: The merge task with file contents
         prompt: The merge prompt
-        model: Model to use for merge
+        model_shorthand: Model shorthand (haiku, sonnet, opus) - resolved for Bedrock/Anthropic
         max_thinking_tokens: Max thinking tokens for the model
 
     Returns:
@@ -1878,6 +1880,7 @@ async def _attempt_ai_merge(
     except ImportError:
         return False, None, "core.simple_client not available"
 
+    model = resolve_model_id(model_shorthand)
     client = create_simple_client(
         agent_type="merge_resolver",
         model=model,
@@ -2026,7 +2029,7 @@ async def _merge_file_with_ai_async(
             success, merged_content, error = await _attempt_ai_merge(
                 task,
                 prompt,
-                model=MERGE_FAST_MODEL,
+                model_shorthand=MERGE_FAST_MODEL_SHORTHAND,
                 max_thinking_tokens=MERGE_FAST_THINKING,
             )
 
@@ -2048,7 +2051,7 @@ async def _merge_file_with_ai_async(
             success, merged_content, error = await _attempt_ai_merge(
                 task,
                 prompt,
-                model=MERGE_CAPABLE_MODEL,
+                model_shorthand=MERGE_CAPABLE_MODEL_SHORTHAND,
                 max_thinking_tokens=MERGE_COMPLEX_THINKING,
             )
 

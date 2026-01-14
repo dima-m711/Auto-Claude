@@ -27,12 +27,14 @@ from agents.tools_pkg import get_agent_config, get_default_thinking_level
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
 from core.auth import get_sdk_env_vars, require_auth_token
 from core.client import find_claude_cli
-from phase_config import get_thinking_budget
+from phase_config import get_thinking_budget, resolve_model_id
+
+DEFAULT_SIMPLE_CLIENT_MODEL_SHORTHAND = "haiku"
 
 
 def create_simple_client(
     agent_type: str = "merge_resolver",
-    model: str = "claude-haiku-4-5-20251001",
+    model: str | None = None,
     system_prompt: str | None = None,
     cwd: Path | None = None,
     max_turns: int = 1,
@@ -52,7 +54,9 @@ def create_simple_client(
                    - "insights" - Read-only code insight extraction
                    - "batch_analysis" - Read-only batch issue analysis
                    - "batch_validation" - Read-only validation
-        model: Claude model to use (defaults to Haiku for fast/cheap operations)
+        model: Claude model to use. Can be a shorthand (haiku, sonnet, opus)
+               or full model ID. Automatically resolved for Bedrock/Anthropic.
+               Defaults to Haiku for fast/cheap operations.
         system_prompt: Optional custom system prompt (for specialized tasks)
         cwd: Working directory for file operations (optional)
         max_turns: Maximum conversation turns (default: 1 for single-turn)
@@ -88,9 +92,15 @@ def create_simple_client(
     # Find Claude CLI path (handles non-standard installations)
     cli_path = find_claude_cli()
 
+    # Resolve model ID for Bedrock/Anthropic compatibility
+    # If model is None, use default; resolve_model_id handles shorthands and full IDs
+    if model is None:
+        model = DEFAULT_SIMPLE_CLIENT_MODEL_SHORTHAND
+    resolved_model = resolve_model_id(model)
+
     # Build options dict
     options_kwargs = {
-        "model": model,
+        "model": resolved_model,
         "system_prompt": system_prompt,
         "allowed_tools": allowed_tools,
         "max_turns": max_turns,

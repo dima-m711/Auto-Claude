@@ -7,6 +7,7 @@ Reads configuration from task_metadata.json and provides resolved model IDs.
 """
 
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Literal, TypedDict
@@ -36,7 +37,7 @@ def get_model_id_for_shorthand(shorthand: str) -> str:
         Full model ID (Bedrock format or Anthropic API format)
     """
     use_bedrock = os.environ.get("CLAUDE_CODE_USE_BEDROCK") == "1"
-
+    logging.debug(f"CLAUDE_CODE_USE_BEDROCK={use_bedrock}")
     if use_bedrock:
         # Bedrock model IDs
         BEDROCK_MODEL_MAP = {
