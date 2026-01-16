@@ -10,14 +10,27 @@
  */
 
 /**
+ * Provider type for API profiles
+ * - 'api': Standard API key authentication (Anthropic, OpenRouter, etc.)
+ * - 'bedrock': AWS Bedrock authentication (uses AWS credentials)
+ */
+export type APIProviderType = 'api' | 'bedrock';
+
+/**
  * API Profile - represents a custom API endpoint configuration
  * IMPORTANT: Named APIProfile (not Profile) to avoid conflicts with user profiles
  */
 export interface APIProfile {
   id: string; // UUID v4
   name: string; // User-friendly name
-  baseUrl: string; // API endpoint URL (e.g., https://api.anthropic.com)
-  apiKey: string; // Full API key (never display in UI - use maskApiKey())
+  /** Provider type - 'api' for standard API key auth, 'bedrock' for AWS Bedrock */
+  providerType?: APIProviderType; // Optional for backwards compatibility (defaults to 'api')
+  baseUrl: string; // API endpoint URL (e.g., https://api.anthropic.com) - empty for Bedrock
+  apiKey: string; // Full API key (never display in UI - use maskApiKey()) - empty for Bedrock
+  /** AWS Region for Bedrock (e.g., 'us-east-1') - only used when providerType is 'bedrock' */
+  awsRegion?: string;
+  /** AWS Profile name for Bedrock SSO/named profile authentication - only used when providerType is 'bedrock' */
+  awsProfile?: string;
   models?: {
     // OPTIONAL - only specify models to override
     default?: string; // Maps to ANTHROPIC_MODEL
@@ -43,8 +56,14 @@ export interface ProfilesFile {
  */
 export interface ProfileFormData {
   name: string;
-  baseUrl: string;
-  apiKey: string;
+  /** Provider type - 'api' for standard API key auth, 'bedrock' for AWS Bedrock */
+  providerType?: APIProviderType;
+  baseUrl: string; // Empty string for Bedrock
+  apiKey: string; // Empty string for Bedrock
+  /** AWS Region for Bedrock (e.g., 'us-east-1') */
+  awsRegion?: string;
+  /** AWS Profile name for Bedrock SSO/named profile authentication */
+  awsProfile?: string;
   models?: {
     default?: string;
     haiku?: string;

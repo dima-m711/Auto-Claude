@@ -56,6 +56,7 @@
     "addButton": "Ajouter un profil",
     "presets": {
       "anthropic": "Anthropic",
+      "bedrock": "AWS Bedrock",
       "openrouter": "OpenRouter",
       "groq": "Groq",
       "glmGlobal": "GLM (Global)",
@@ -65,24 +66,31 @@
       "name": "Nom",
       "preset": "Préréglage",
       "baseUrl": "URL de base",
-      "apiKey": "Clé API"
+      "apiKey": "Clé API",
+      "awsRegion": "Région AWS",
+      "awsProfile": "Profil AWS (Optionnel)"
     },
     "placeholders": {
       "name": "Mon API personnalisée",
       "preset": "Choisir un préréglage de fournisseur",
       "baseUrl": "https://api.anthropic.com",
-      "apiKey": "sk-ant-..."
+      "apiKey": "sk-ant-...",
+      "awsRegion": "us-east-1",
+      "awsProfile": "default"
     },
     "hints": {
       "preset": "Les préréglages remplissent l'URL de base ; vous devez toujours coller votre clé API.",
-      "baseUrl": "Exemple : https://api.anthropic.com ou http://localhost:8080"
+      "baseUrl": "Exemple : https://api.anthropic.com ou http://localhost:8080",
+      "awsRegion": "Région AWS où Bedrock est disponible (ex. : us-east-1, us-west-2)",
+      "awsProfile": "Profil nommé depuis ~/.aws/credentials ou ~/.aws/config pour SSO"
     },
     "validation": {
       "nameRequired": "Le nom est requis",
       "baseUrlRequired": "L'URL de base est requise",
       "baseUrlInvalid": "Format d'URL invalide (doit être http:// ou https://)",
       "apiKeyRequired": "La clé API est requise",
-      "apiKeyInvalid": "Format de clé API invalide"
+      "apiKeyInvalid": "Format de clé API invalide",
+      "awsRegionRequired": "La région AWS est requise"
     },
     "actions": {
       "save": "Enregistrer le profil",
@@ -108,6 +116,15 @@
       "haikuPlaceholder": "ex. : claude-haiku-4-5-20251001",
       "sonnetPlaceholder": "ex. : claude-sonnet-4-5-20250929",
       "opusPlaceholder": "ex. : claude-opus-4-5-20251101"
+    },
+    "bedrock": {
+      "authInfo": "AWS Bedrock utilise vos identifiants AWS locaux (via AWS CLI, variables d'environnement ou rôles IAM). Exécutez 'aws sso login --profile <profil>' pour vous authentifier si vous utilisez SSO.",
+      "modelsTitle": "Configuration des modèles Bedrock",
+      "modelsDescription": "Les ID de modèles Bedrock sont pré-configurés. Modifiez uniquement si nécessaire.",
+      "modelPlaceholder": "ex. : us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "haikuPlaceholder": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "sonnetPlaceholder": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "opusPlaceholder": "us.anthropic.claude-opus-4-5-20251101-v1:0"
     },
     "empty": {
       "title": "Aucun profil API configuré",

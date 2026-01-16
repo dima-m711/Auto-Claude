@@ -56,6 +56,7 @@
     "addButton": "Add Profile",
     "presets": {
       "anthropic": "Anthropic",
+      "bedrock": "AWS Bedrock",
       "openrouter": "OpenRouter",
       "groq": "Groq",
       "glmGlobal": "GLM (Global)",
@@ -65,24 +66,31 @@
       "name": "Name",
       "preset": "Preset",
       "baseUrl": "Base URL",
-      "apiKey": "API Key"
+      "apiKey": "API Key",
+      "awsRegion": "AWS Region",
+      "awsProfile": "AWS Profile (Optional)"
     },
     "placeholders": {
       "name": "My Custom API",
       "preset": "Choose a provider preset",
       "baseUrl": "https://api.anthropic.com",
-      "apiKey": "sk-ant-..."
+      "apiKey": "sk-ant-...",
+      "awsRegion": "us-east-1",
+      "awsProfile": "default"
     },
     "hints": {
       "preset": "Presets fill the base URL; you still need to paste your API key.",
-      "baseUrl": "Example: https://api.anthropic.com or http://localhost:8080"
+      "baseUrl": "Example: https://api.anthropic.com or http://localhost:8080",
+      "awsRegion": "AWS region where Bedrock is available (e.g., us-east-1, us-west-2)",
+      "awsProfile": "Named profile from ~/.aws/credentials or ~/.aws/config for SSO"
     },
     "validation": {
       "nameRequired": "Name is required",
       "baseUrlRequired": "Base URL is required",
       "baseUrlInvalid": "Invalid URL format (must be http:// or https://)",
       "apiKeyRequired": "API Key is required",
-      "apiKeyInvalid": "Invalid API Key format"
+      "apiKeyInvalid": "Invalid API Key format",
+      "awsRegionRequired": "AWS Region is required"
     },
     "actions": {
       "save": "Save Profile",
@@ -108,6 +116,15 @@
       "haikuPlaceholder": "e.g., claude-haiku-4-5-20251001",
       "sonnetPlaceholder": "e.g., claude-sonnet-4-5-20250929",
       "opusPlaceholder": "e.g., claude-opus-4-5-20251101"
+    },
+    "bedrock": {
+      "authInfo": "AWS Bedrock uses your local AWS credentials (via AWS CLI, environment variables, or IAM roles). Run 'aws sso login --profile <profile>' to authenticate if using SSO.",
+      "modelsTitle": "Bedrock Model Configuration",
+      "modelsDescription": "Bedrock model IDs are pre-configured. Modify only if needed.",
+      "modelPlaceholder": "e.g., us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "haikuPlaceholder": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "sonnetPlaceholder": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "opusPlaceholder": "us.anthropic.claude-opus-4-5-20251101-v1:0"
     },
     "empty": {
       "title": "No API profiles configured",

@@ -125,14 +125,24 @@ export async function deleteProfile(id: string): Promise<void> {
  * Uses atomic operation to prevent race conditions in concurrent profile creation
  */
 export async function createProfile(input: CreateProfileInput): Promise<APIProfile> {
-  // Validate base URL
-  if (!validateBaseUrl(input.baseUrl)) {
-    throw new Error('Invalid base URL');
-  }
+  const isBedrock = input.providerType === 'bedrock';
 
-  // Validate API key
-  if (!validateApiKey(input.apiKey)) {
-    throw new Error('Invalid API key');
+  if (isBedrock) {
+    // Bedrock validation - requires AWS region
+    if (!input.awsRegion || input.awsRegion.trim() === '') {
+      throw new Error('AWS Region is required for Bedrock');
+    }
+  } else {
+    // Standard API validation
+    // Validate base URL
+    if (!validateBaseUrl(input.baseUrl)) {
+      throw new Error('Invalid base URL');
+    }
+
+    // Validate API key
+    if (!validateApiKey(input.apiKey)) {
+      throw new Error('Invalid API key');
+    }
   }
 
   // Use atomic operation to ensure uniqueness check and creation happen together
@@ -154,8 +164,14 @@ export async function createProfile(input: CreateProfileInput): Promise<APIProfi
     const profile: APIProfile = {
       id: generateProfileId(),
       name: input.name.trim(),
-      baseUrl: input.baseUrl.trim(),
-      apiKey: input.apiKey.trim(),
+      providerType: input.providerType || 'api',
+      baseUrl: isBedrock ? '' : input.baseUrl.trim(),
+      apiKey: isBedrock ? '' : input.apiKey.trim(),
+      // Bedrock-specific fields
+      ...(isBedrock && {
+        awsRegion: input.awsRegion?.trim(),
+        awsProfile: input.awsProfile?.trim() || undefined
+      }),
       models: input.models,
       createdAt: now,
       updatedAt: now
@@ -183,14 +199,24 @@ export async function createProfile(input: CreateProfileInput): Promise<APIProfi
  * Uses atomic operation to prevent race conditions in concurrent profile updates
  */
 export async function updateProfile(input: UpdateProfileInput): Promise<APIProfile> {
-  // Validate base URL
-  if (!validateBaseUrl(input.baseUrl)) {
-    throw new Error('Invalid base URL');
-  }
+  const isBedrock = input.providerType === 'bedrock';
 
-  // Validate API key
-  if (!validateApiKey(input.apiKey)) {
-    throw new Error('Invalid API key');
+  if (isBedrock) {
+    // Bedrock validation - requires AWS region
+    if (!input.awsRegion || input.awsRegion.trim() === '') {
+      throw new Error('AWS Region is required for Bedrock');
+    }
+  } else {
+    // Standard API validation
+    // Validate base URL
+    if (!validateBaseUrl(input.baseUrl)) {
+      throw new Error('Invalid base URL');
+    }
+
+    // Validate API key
+    if (!validateApiKey(input.apiKey)) {
+      throw new Error('Invalid API key');
+    }
   }
 
   // Use atomic operation to ensure uniqueness check and update happen together
@@ -219,8 +245,12 @@ export async function updateProfile(input: UpdateProfileInput): Promise<APIProfi
     const updated: APIProfile = {
       ...existingProfile,
       name: input.name.trim(),
-      baseUrl: input.baseUrl.trim(),
-      apiKey: input.apiKey.trim(),
+      providerType: input.providerType || 'api',
+      baseUrl: isBedrock ? '' : input.baseUrl.trim(),
+      apiKey: isBedrock ? '' : input.apiKey.trim(),
+      // Bedrock-specific fields
+      awsRegion: isBedrock ? input.awsRegion?.trim() : undefined,
+      awsProfile: isBedrock ? (input.awsProfile?.trim() || undefined) : undefined,
       models: input.models,
       updatedAt: Date.now()
     };
@@ -243,9 +273,18 @@ export async function updateProfile(input: UpdateProfileInput): Promise<APIProfi
  * into Python subprocess. Returns empty object when no profile is active
  * (OAuth mode), allowing CLAUDE_CODE_OAUTH_TOKEN to be used instead.
  *
- * Environment Variable Mapping:
+ * Standard API Environment Variable Mapping:
  * - profile.baseUrl → ANTHROPIC_BASE_URL
  * - profile.apiKey → ANTHROPIC_AUTH_TOKEN
+ * - profile.models.default → ANTHROPIC_MODEL
+ * - profile.models.haiku → ANTHROPIC_DEFAULT_HAIKU_MODEL
+ * - profile.models.sonnet → ANTHROPIC_DEFAULT_SONNET_MODEL
+ * - profile.models.opus → ANTHROPIC_DEFAULT_OPUS_MODEL
+ *
+ * AWS Bedrock Environment Variable Mapping:
+ * - CLAUDE_CODE_USE_BEDROCK=1 (enables Bedrock mode)
+ * - profile.awsRegion → AWS_REGION
+ * - profile.awsProfile → AWS_PROFILE (optional)
  * - profile.models.default → ANTHROPIC_MODEL
  * - profile.models.haiku → ANTHROPIC_DEFAULT_HAIKU_MODEL
  * - profile.models.sonnet → ANTHROPIC_DEFAULT_SONNET_MODEL
@@ -272,15 +311,33 @@ export async function getAPIProfileEnv(): Promise<Record<string, string>> {
     return {};
   }
 
-  // Map profile fields to SDK env vars
-  const envVars: Record<string, string> = {
-    ANTHROPIC_BASE_URL: profile.baseUrl || '',
-    ANTHROPIC_AUTH_TOKEN: profile.apiKey || '',
-    ANTHROPIC_MODEL: profile.models?.default || '',
-    ANTHROPIC_DEFAULT_HAIKU_MODEL: profile.models?.haiku || '',
-    ANTHROPIC_DEFAULT_SONNET_MODEL: profile.models?.sonnet || '',
-    ANTHROPIC_DEFAULT_OPUS_MODEL: profile.models?.opus || '',
-  };
+  const isBedrock = profile.providerType === 'bedrock';
+
+  // Map profile fields to SDK env vars based on provider type
+  let envVars: Record<string, string>;
+
+  if (isBedrock) {
+    // Bedrock-specific environment variables
+    envVars = {
+      CLAUDE_CODE_USE_BEDROCK: '1',
+      AWS_REGION: profile.awsRegion || '',
+      AWS_PROFILE: profile.awsProfile || '',
+      ANTHROPIC_MODEL: profile.models?.default || '',
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: profile.models?.haiku || '',
+      ANTHROPIC_DEFAULT_SONNET_MODEL: profile.models?.sonnet || '',
+      ANTHROPIC_DEFAULT_OPUS_MODEL: profile.models?.opus || '',
+    };
+  } else {
+    // Standard API environment variables
+    envVars = {
+      ANTHROPIC_BASE_URL: profile.baseUrl || '',
+      ANTHROPIC_AUTH_TOKEN: profile.apiKey || '',
+      ANTHROPIC_MODEL: profile.models?.default || '',
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: profile.models?.haiku || '',
+      ANTHROPIC_DEFAULT_SONNET_MODEL: profile.models?.sonnet || '',
+      ANTHROPIC_DEFAULT_OPUS_MODEL: profile.models?.opus || '',
+    };
+  }
 
   // Filter out empty/whitespace string values (only set env vars that have values)
   // This handles empty strings, null, undefined, and whitespace-only values
