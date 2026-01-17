@@ -550,6 +550,30 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
   // Get the effective API key for model selects (in edit mode without changing key, use profile's key)
   const effectiveApiKey = isEditMode && !isChangingApiKey && profile ? profile.apiKey : apiKey;
 
+  // Model field configuration - for Bedrock, skip model discovery by passing empty credentials
+  const modelBaseUrl = isBedrock ? '' : baseUrl;
+  const modelApiKey = isBedrock ? '' : effectiveApiKey;
+  const modelPlaceholders = {
+    default: isBedrock
+      ? t('settings:apiProfiles.bedrock.modelPlaceholder')
+      : t('settings:apiProfiles.models.defaultPlaceholder'),
+    haiku: isBedrock
+      ? t('settings:apiProfiles.bedrock.haikuPlaceholder')
+      : t('settings:apiProfiles.models.haikuPlaceholder'),
+    sonnet: isBedrock
+      ? t('settings:apiProfiles.bedrock.sonnetPlaceholder')
+      : t('settings:apiProfiles.models.sonnetPlaceholder'),
+    opus: isBedrock
+      ? t('settings:apiProfiles.bedrock.opusPlaceholder')
+      : t('settings:apiProfiles.models.opusPlaceholder'),
+  };
+  const modelsTitle = isBedrock
+    ? t('settings:apiProfiles.bedrock.modelsTitle')
+    : t('settings:apiProfiles.models.title');
+  const modelsDescription = isBedrock
+    ? t('settings:apiProfiles.bedrock.modelsDescription')
+    : t('settings:apiProfiles.models.description');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -702,16 +726,8 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
 
           {/* Optional model mappings */}
           <div className="space-y-3 pt-2 border-t">
-            <Label className="text-base">
-              {isBedrock
-                ? t('settings:apiProfiles.bedrock.modelsTitle')
-                : t('settings:apiProfiles.models.title')}
-            </Label>
-            <p className="text-xs text-muted-foreground">
-              {isBedrock
-                ? t('settings:apiProfiles.bedrock.modelsDescription')
-                : t('settings:apiProfiles.models.description')}
-            </p>
+            <Label className="text-base">{modelsTitle}</Label>
+            <p className="text-xs text-muted-foreground">{modelsDescription}</p>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -721,11 +737,9 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
                 <ModelSearchableSelect
                   value={defaultModel}
                   onChange={setDefaultModel}
-                  placeholder={isBedrock
-                    ? t('settings:apiProfiles.bedrock.modelPlaceholder')
-                    : t('settings:apiProfiles.models.defaultPlaceholder')}
-                  baseUrl={isBedrock ? '' : baseUrl}
-                  apiKey={isBedrock ? '' : effectiveApiKey}
+                  placeholder={modelPlaceholders.default}
+                  baseUrl={modelBaseUrl}
+                  apiKey={modelApiKey}
                 />
               </div>
 
@@ -736,11 +750,9 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
                 <ModelSearchableSelect
                   value={haikuModel}
                   onChange={setHaikuModel}
-                  placeholder={isBedrock
-                    ? t('settings:apiProfiles.bedrock.haikuPlaceholder')
-                    : t('settings:apiProfiles.models.haikuPlaceholder')}
-                  baseUrl={isBedrock ? '' : baseUrl}
-                  apiKey={isBedrock ? '' : effectiveApiKey}
+                  placeholder={modelPlaceholders.haiku}
+                  baseUrl={modelBaseUrl}
+                  apiKey={modelApiKey}
                 />
               </div>
 
@@ -751,11 +763,9 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
                 <ModelSearchableSelect
                   value={sonnetModel}
                   onChange={setSonnetModel}
-                  placeholder={isBedrock
-                    ? t('settings:apiProfiles.bedrock.sonnetPlaceholder')
-                    : t('settings:apiProfiles.models.sonnetPlaceholder')}
-                  baseUrl={isBedrock ? '' : baseUrl}
-                  apiKey={isBedrock ? '' : effectiveApiKey}
+                  placeholder={modelPlaceholders.sonnet}
+                  baseUrl={modelBaseUrl}
+                  apiKey={modelApiKey}
                 />
               </div>
 
@@ -766,11 +776,9 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
                 <ModelSearchableSelect
                   value={opusModel}
                   onChange={setOpusModel}
-                  placeholder={isBedrock
-                    ? t('settings:apiProfiles.bedrock.opusPlaceholder')
-                    : t('settings:apiProfiles.models.opusPlaceholder')}
-                  baseUrl={isBedrock ? '' : baseUrl}
-                  apiKey={isBedrock ? '' : effectiveApiKey}
+                  placeholder={modelPlaceholders.opus}
+                  baseUrl={modelBaseUrl}
+                  apiKey={modelApiKey}
                 />
               </div>
             </div>
