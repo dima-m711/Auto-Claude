@@ -211,110 +211,6 @@ function ApiCredentialsFields({
   );
 }
 
-interface ModelFieldsProps {
-  defaultModel: string;
-  haikuModel: string;
-  sonnetModel: string;
-  opusModel: string;
-  baseUrl: string;
-  apiKey: string;
-  isBedrock: boolean;
-  onDefaultModelChange: (value: string) => void;
-  onHaikuModelChange: (value: string) => void;
-  onSonnetModelChange: (value: string) => void;
-  onOpusModelChange: (value: string) => void;
-}
-
-function ModelFields({
-  defaultModel,
-  haikuModel,
-  sonnetModel,
-  opusModel,
-  baseUrl,
-  apiKey,
-  isBedrock,
-  onDefaultModelChange,
-  onHaikuModelChange,
-  onSonnetModelChange,
-  onOpusModelChange
-}: ModelFieldsProps) {
-  const { t } = useTranslation();
-
-  // For Bedrock, pass empty strings to skip model discovery
-  const effectiveBaseUrl = isBedrock ? '' : baseUrl;
-  const effectiveApiKey = isBedrock ? '' : apiKey;
-
-  // Use Bedrock-specific placeholders when in Bedrock mode
-  const defaultPlaceholder = isBedrock
-    ? t('settings:apiProfiles.bedrock.modelPlaceholder')
-    : t('settings:apiProfiles.models.defaultPlaceholder');
-  const haikuPlaceholder = isBedrock
-    ? t('settings:apiProfiles.bedrock.haikuPlaceholder')
-    : t('settings:apiProfiles.models.haikuPlaceholder');
-  const sonnetPlaceholder = isBedrock
-    ? t('settings:apiProfiles.bedrock.sonnetPlaceholder')
-    : t('settings:apiProfiles.models.sonnetPlaceholder');
-  const opusPlaceholder = isBedrock
-    ? t('settings:apiProfiles.bedrock.opusPlaceholder')
-    : t('settings:apiProfiles.models.opusPlaceholder');
-
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <div className="space-y-2">
-        <Label htmlFor="model-default" className="text-sm text-muted-foreground">
-          {t('settings:apiProfiles.models.defaultLabel')}
-        </Label>
-        <ModelSearchableSelect
-          value={defaultModel}
-          onChange={onDefaultModelChange}
-          placeholder={defaultPlaceholder}
-          baseUrl={effectiveBaseUrl}
-          apiKey={effectiveApiKey}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="model-haiku" className="text-sm text-muted-foreground">
-          {t('settings:apiProfiles.models.haikuLabel')}
-        </Label>
-        <ModelSearchableSelect
-          value={haikuModel}
-          onChange={onHaikuModelChange}
-          placeholder={haikuPlaceholder}
-          baseUrl={effectiveBaseUrl}
-          apiKey={effectiveApiKey}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="model-sonnet" className="text-sm text-muted-foreground">
-          {t('settings:apiProfiles.models.sonnetLabel')}
-        </Label>
-        <ModelSearchableSelect
-          value={sonnetModel}
-          onChange={onSonnetModelChange}
-          placeholder={sonnetPlaceholder}
-          baseUrl={effectiveBaseUrl}
-          apiKey={effectiveApiKey}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="model-opus" className="text-sm text-muted-foreground">
-          {t('settings:apiProfiles.models.opusLabel')}
-        </Label>
-        <ModelSearchableSelect
-          value={opusModel}
-          onChange={onOpusModelChange}
-          placeholder={opusPlaceholder}
-          baseUrl={effectiveBaseUrl}
-          apiKey={effectiveApiKey}
-        />
-      </div>
-    </div>
-  );
-}
-
 // ============================================================================
 // Main component
 // ============================================================================
@@ -817,19 +713,67 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
                 : t('settings:apiProfiles.models.description')}
             </p>
 
-            <ModelFields
-              defaultModel={defaultModel}
-              haikuModel={haikuModel}
-              sonnetModel={sonnetModel}
-              opusModel={opusModel}
-              baseUrl={baseUrl}
-              apiKey={effectiveApiKey}
-              isBedrock={isBedrock}
-              onDefaultModelChange={setDefaultModel}
-              onHaikuModelChange={setHaikuModel}
-              onSonnetModelChange={setSonnetModel}
-              onOpusModelChange={setOpusModel}
-            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="model-default" className="text-sm text-muted-foreground">
+                  {t('settings:apiProfiles.models.defaultLabel')}
+                </Label>
+                <ModelSearchableSelect
+                  value={defaultModel}
+                  onChange={setDefaultModel}
+                  placeholder={isBedrock
+                    ? t('settings:apiProfiles.bedrock.modelPlaceholder')
+                    : t('settings:apiProfiles.models.defaultPlaceholder')}
+                  baseUrl={isBedrock ? '' : baseUrl}
+                  apiKey={isBedrock ? '' : effectiveApiKey}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="model-haiku" className="text-sm text-muted-foreground">
+                  {t('settings:apiProfiles.models.haikuLabel')}
+                </Label>
+                <ModelSearchableSelect
+                  value={haikuModel}
+                  onChange={setHaikuModel}
+                  placeholder={isBedrock
+                    ? t('settings:apiProfiles.bedrock.haikuPlaceholder')
+                    : t('settings:apiProfiles.models.haikuPlaceholder')}
+                  baseUrl={isBedrock ? '' : baseUrl}
+                  apiKey={isBedrock ? '' : effectiveApiKey}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="model-sonnet" className="text-sm text-muted-foreground">
+                  {t('settings:apiProfiles.models.sonnetLabel')}
+                </Label>
+                <ModelSearchableSelect
+                  value={sonnetModel}
+                  onChange={setSonnetModel}
+                  placeholder={isBedrock
+                    ? t('settings:apiProfiles.bedrock.sonnetPlaceholder')
+                    : t('settings:apiProfiles.models.sonnetPlaceholder')}
+                  baseUrl={isBedrock ? '' : baseUrl}
+                  apiKey={isBedrock ? '' : effectiveApiKey}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="model-opus" className="text-sm text-muted-foreground">
+                  {t('settings:apiProfiles.models.opusLabel')}
+                </Label>
+                <ModelSearchableSelect
+                  value={opusModel}
+                  onChange={setOpusModel}
+                  placeholder={isBedrock
+                    ? t('settings:apiProfiles.bedrock.opusPlaceholder')
+                    : t('settings:apiProfiles.models.opusPlaceholder')}
+                  baseUrl={isBedrock ? '' : baseUrl}
+                  apiKey={isBedrock ? '' : effectiveApiKey}
+                />
+              </div>
+            </div>
           </div>
 
           {/* General error display */}
