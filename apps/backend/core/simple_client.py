@@ -27,12 +27,12 @@ from agents.tools_pkg import get_agent_config, get_default_thinking_level
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
 from core.auth import get_sdk_env_vars, require_auth_token
 from core.client import find_claude_cli
-from phase_config import get_thinking_budget
+from phase_config import get_thinking_budget, resolve_model_id
 
 
 def create_simple_client(
     agent_type: str = "merge_resolver",
-    model: str = "claude-haiku-4-5-20251001",
+    model: str | None = None,
     system_prompt: str | None = None,
     cwd: Path | None = None,
     max_turns: int = 1,
@@ -52,7 +52,7 @@ def create_simple_client(
                    - "insights" - Read-only code insight extraction
                    - "batch_analysis" - Read-only batch issue analysis
                    - "batch_validation" - Read-only validation
-        model: Claude model to use (defaults to Haiku for fast/cheap operations)
+        model: Claude model to use. If None, uses profile-configured Haiku model.
         system_prompt: Optional custom system prompt (for specialized tasks)
         cwd: Working directory for file operations (optional)
         max_turns: Maximum conversation turns (default: 1 for single-turn)
@@ -65,6 +65,9 @@ def create_simple_client(
     Raises:
         ValueError: If agent_type is not found in AGENT_CONFIGS
     """
+    if model is None:
+        model = resolve_model_id("haiku")
+
     # Get authentication
     oauth_token = require_auth_token()
     import os

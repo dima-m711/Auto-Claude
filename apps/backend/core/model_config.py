@@ -9,14 +9,18 @@ Used by both commit_message.py and merge resolver.
 import logging
 import os
 
+from phase_config import resolve_model_id
+
 logger = logging.getLogger(__name__)
 
-# Default model for utility operations (commit messages, merge resolution)
-DEFAULT_UTILITY_MODEL = "claude-haiku-4-5-20251001"
+
+def get_default_utility_model() -> str:
+    """Get the default model for utility operations (commit messages, merge resolution)."""
+    return resolve_model_id("haiku")
 
 
 def get_utility_model_config(
-    default_model: str = DEFAULT_UTILITY_MODEL,
+    default_model: str | None = None,
 ) -> tuple[str, int | None]:
     """
     Get utility model configuration from environment variables.
@@ -25,12 +29,15 @@ def get_utility_model_config(
     with sensible defaults and validation.
 
     Args:
-        default_model: Default model ID to use if UTILITY_MODEL_ID not set
+        default_model: Default model ID to use if UTILITY_MODEL_ID not set.
+                      If None, uses get_default_utility_model() (respects API profile)
 
     Returns:
         Tuple of (model_id, thinking_budget) where thinking_budget is None
         if extended thinking is disabled, or an int representing token budget
     """
+    if default_model is None:
+        default_model = get_default_utility_model()
     model = os.environ.get("UTILITY_MODEL_ID", default_model)
     thinking_budget_str = os.environ.get("UTILITY_THINKING_BUDGET", "")
 
