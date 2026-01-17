@@ -699,3 +699,382 @@ describe('ProfileEditDialog - Test Connection Feature', () => {
     });
   });
 });
+
+describe('ProfileEditDialog - AWS Bedrock Integration', () => {
+  const mockOnOpenChange = vi.fn();
+  const mockOnSaved = vi.fn();
+
+  const mockBedrockProfile: APIProfile = {
+    id: 'bedrock-profile-id',
+    name: 'My Bedrock Profile',
+    providerType: 'bedrock',
+    baseUrl: '',
+    apiKey: '',
+    awsRegion: 'us-west-2',
+    awsProfile: 'my-sso-profile',
+    models: {
+      default: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+      haiku: 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
+      sonnet: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+      opus: 'us.anthropic.claude-opus-4-5-20251101-v1:0'
+    },
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useSettingsStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      saveProfile: vi.fn().mockResolvedValue(true),
+      updateProfile: vi.fn().mockResolvedValue(true),
+      profilesLoading: false,
+      profilesError: null,
+      isTestingConnection: false,
+      testConnectionResult: null
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Create Mode - Bedrock Preset Selection', () => {
+    it('should show AWS Region and AWS Profile fields when Bedrock preset is selected', async () => {
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+        />
+      );
+
+      // Select Bedrock preset
+      const presetTrigger = screen.getByLabelText(/preset/i);
+      fireEvent.keyDown(presetTrigger, { key: 'ArrowDown', code: 'ArrowDown' });
+
+      const bedrockOption = await screen.findByRole('option', { name: 'AWS Bedrock' });
+      fireEvent.click(bedrockOption);
+
+      // Should show AWS fields
+      await waitFor(() => {
+        expect(screen.getByLabelText(/aws region/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/aws profile/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should hide Base URL and API Key fields when Bedrock preset is selected', async () => {
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+        />
+      );
+
+      // Initially, API fields should be visible
+      expect(screen.getByLabelText(/base url/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/api key/i)).toBeInTheDocument();
+
+      // Select Bedrock preset
+      const presetTrigger = screen.getByLabelText(/preset/i);
+      fireEvent.keyDown(presetTrigger, { key: 'ArrowDown', code: 'ArrowDown' });
+
+      const bedrockOption = await screen.findByRole('option', { name: 'AWS Bedrock' });
+      fireEvent.click(bedrockOption);
+
+      // API fields should be hidden
+      await waitFor(() => {
+        expect(screen.queryByLabelText(/base url/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/api key/i)).not.toBeInTheDocument();
+      });
+    });
+
+    it('should pre-fill default AWS region when Bedrock preset is selected', async () => {
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+        />
+      );
+
+      // Select Bedrock preset
+      const presetTrigger = screen.getByLabelText(/preset/i);
+      fireEvent.keyDown(presetTrigger, { key: 'ArrowDown', code: 'ArrowDown' });
+
+      const bedrockOption = await screen.findByRole('option', { name: 'AWS Bedrock' });
+      fireEvent.click(bedrockOption);
+
+      // Should have default region pre-filled
+      await waitFor(() => {
+        expect(screen.getByLabelText(/aws region/i)).toHaveValue('us-east-1');
+      });
+    });
+
+    it('should pre-fill Bedrock model mappings when preset is selected', async () => {
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+        />
+      );
+
+      // Select Bedrock preset
+      const presetTrigger = screen.getByLabelText(/preset/i);
+      fireEvent.keyDown(presetTrigger, { key: 'ArrowDown', code: 'ArrowDown' });
+
+      const bedrockOption = await screen.findByRole('option', { name: 'AWS Bedrock' });
+      fireEvent.click(bedrockOption);
+
+      // Check that model fields have Bedrock model IDs
+      await waitFor(() => {
+        const modelInputs = screen.getAllByRole('textbox');
+        const hasSonnetModel = modelInputs.some(
+          input => (input as HTMLInputElement).value.includes('us.anthropic.claude-sonnet')
+        );
+        expect(hasSonnetModel).toBe(true);
+      });
+    });
+
+    it('should reset model values when switching from Bedrock to API preset', async () => {
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+        />
+      );
+
+      // First select Bedrock preset
+      const presetTrigger = screen.getByLabelText(/preset/i);
+      fireEvent.keyDown(presetTrigger, { key: 'ArrowDown', code: 'ArrowDown' });
+
+      const bedrockOption = await screen.findByRole('option', { name: 'AWS Bedrock' });
+      fireEvent.click(bedrockOption);
+
+      // Verify Bedrock models are present
+      await waitFor(() => {
+        const modelInputs = screen.getAllByRole('textbox');
+        const hasSonnetModel = modelInputs.some(
+          input => (input as HTMLInputElement).value.includes('us.anthropic.claude-sonnet')
+        );
+        expect(hasSonnetModel).toBe(true);
+      });
+
+      // Now switch to Anthropic preset
+      fireEvent.keyDown(presetTrigger, { key: 'ArrowDown', code: 'ArrowDown' });
+
+      const anthropicOption = await screen.findByRole('option', { name: 'Anthropic' });
+      fireEvent.click(anthropicOption);
+
+      // Model values should be reset (not have Bedrock model IDs)
+      await waitFor(() => {
+        const modelInputs = screen.getAllByRole('textbox');
+        const hasSonnetModel = modelInputs.some(
+          input => (input as HTMLInputElement).value.includes('us.anthropic.claude-sonnet')
+        );
+        expect(hasSonnetModel).toBe(false);
+      });
+    });
+
+    it('should not show Test Connection button for Bedrock', async () => {
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+        />
+      );
+
+      // Select Bedrock preset
+      const presetTrigger = screen.getByLabelText(/preset/i);
+      fireEvent.keyDown(presetTrigger, { key: 'ArrowDown', code: 'ArrowDown' });
+
+      const bedrockOption = await screen.findByRole('option', { name: 'AWS Bedrock' });
+      fireEvent.click(bedrockOption);
+
+      // Test Connection button should not be present
+      await waitFor(() => {
+        expect(screen.queryByText('Test Connection')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show Bedrock auth info message instead of Test Connection', async () => {
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+        />
+      );
+
+      // Select Bedrock preset
+      const presetTrigger = screen.getByLabelText(/preset/i);
+      fireEvent.keyDown(presetTrigger, { key: 'ArrowDown', code: 'ArrowDown' });
+
+      const bedrockOption = await screen.findByRole('option', { name: 'AWS Bedrock' });
+      fireEvent.click(bedrockOption);
+
+      // Should show auth info message
+      await waitFor(() => {
+        expect(screen.getByText(/AWS Bedrock uses your local AWS credentials/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Edit Mode - Bedrock Profile', () => {
+    it('should pre-populate AWS fields when editing Bedrock profile', async () => {
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+          profile={mockBedrockProfile}
+        />
+      );
+
+      // Should show AWS fields with pre-populated values
+      await waitFor(() => {
+        expect(screen.getByLabelText(/aws region/i)).toHaveValue('us-west-2');
+        expect(screen.getByLabelText(/aws profile/i)).toHaveValue('my-sso-profile');
+      });
+    });
+
+    it('should not show API Key and Base URL when editing Bedrock profile', async () => {
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+          profile={mockBedrockProfile}
+        />
+      );
+
+      // API fields should not be present
+      await waitFor(() => {
+        expect(screen.queryByLabelText(/base url/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/api key/i)).not.toBeInTheDocument();
+      });
+    });
+
+    it('should call updateProfile with Bedrock fields when saving', async () => {
+      const mockUpdateFn = vi.fn().mockResolvedValue(true);
+      (useSettingsStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        updateProfile: mockUpdateFn,
+        saveProfile: vi.fn().mockResolvedValue(true),
+        profilesLoading: false,
+        profilesError: null,
+        isTestingConnection: false,
+        testConnectionResult: null
+      });
+
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+          profile={mockBedrockProfile}
+        />
+      );
+
+      // Wait for form to populate
+      await waitFor(() => {
+        expect(screen.getByLabelText(/name/i)).toHaveValue('My Bedrock Profile');
+      });
+
+      // Change the AWS region
+      const regionInput = screen.getByLabelText(/aws region/i);
+      fireEvent.change(regionInput, { target: { value: 'eu-west-1' } });
+
+      // Click save
+      const saveButton = screen.getByText(/save profile/i);
+      fireEvent.click(saveButton);
+
+      // Verify updateProfile was called with Bedrock fields
+      await waitFor(() => {
+        expect(mockUpdateFn).toHaveBeenCalledWith(
+          expect.objectContaining({
+            providerType: 'bedrock',
+            awsRegion: 'eu-west-1',
+            awsProfile: 'my-sso-profile',
+            apiKey: '',
+            baseUrl: ''
+          })
+        );
+      });
+    });
+  });
+
+  describe('Validation - Bedrock', () => {
+    it('should require AWS Region for Bedrock profiles', async () => {
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+        />
+      );
+
+      // Select Bedrock preset
+      const presetTrigger = screen.getByLabelText(/preset/i);
+      fireEvent.keyDown(presetTrigger, { key: 'ArrowDown', code: 'ArrowDown' });
+
+      const bedrockOption = await screen.findByRole('option', { name: 'AWS Bedrock' });
+      fireEvent.click(bedrockOption);
+
+      // Clear the auto-filled region
+      const regionInput = screen.getByLabelText(/aws region/i);
+      fireEvent.change(regionInput, { target: { value: '' } });
+
+      // Click save
+      const saveButton = screen.getByText(/save profile/i);
+      fireEvent.click(saveButton);
+
+      // Should show validation error
+      await waitFor(() => {
+        expect(screen.getByText(/aws region is required/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should allow optional AWS Profile for Bedrock profiles', async () => {
+      const mockSaveFn = vi.fn().mockResolvedValue(true);
+      (useSettingsStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        saveProfile: mockSaveFn,
+        updateProfile: vi.fn().mockResolvedValue(true),
+        profilesLoading: false,
+        profilesError: null,
+        isTestingConnection: false,
+        testConnectionResult: null
+      });
+
+      render(
+        <ProfileEditDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          onSaved={mockOnSaved}
+        />
+      );
+
+      // Select Bedrock preset
+      const presetTrigger = screen.getByLabelText(/preset/i);
+      fireEvent.keyDown(presetTrigger, { key: 'ArrowDown', code: 'ArrowDown' });
+
+      const bedrockOption = await screen.findByRole('option', { name: 'AWS Bedrock' });
+      fireEvent.click(bedrockOption);
+
+      // Leave AWS Profile empty (it's optional)
+      const awsProfileInput = screen.getByLabelText(/aws profile/i);
+      expect(awsProfileInput).toHaveValue('');
+
+      // Click save - should succeed without AWS Profile
+      const saveButton = screen.getByText(/save profile/i);
+      fireEvent.click(saveButton);
+
+      // Should call saveProfile (validation should pass)
+      await waitFor(() => {
+        expect(mockSaveFn).toHaveBeenCalled();
+      });
+    });
+  });
+});

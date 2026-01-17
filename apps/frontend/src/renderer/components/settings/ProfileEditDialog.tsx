@@ -5,7 +5,7 @@
  * Supports all profile fields including optional model name mappings.
  *
  * Features:
- * - Required fields: Name, Base URL, API Key
+ * - Required fields: Name, Base URL, API Key (or AWS Region for Bedrock)
  * - Optional model fields: Default, Haiku, Sonnet, Opus
  * - Form validation with error display
  * - Save button triggers store action (create or update)
@@ -32,9 +32,9 @@ import { useSettingsStore } from '../../stores/settings-store';
 import { ModelSearchableSelect } from './ModelSearchableSelect';
 import { useToast } from '../../hooks/use-toast';
 import { isValidUrl, isValidApiKey } from '../../lib/profile-utils';
-import type { APIProfile, ProfileFormData, TestConnectionResult, APIProviderType } from '@shared/types/profile';
+import type { APIProfile, ProfileFormData, APIProviderType } from '@shared/types/profile';
 import { maskApiKey } from '../../lib/profile-utils';
-import { API_PROVIDER_PRESETS, ApiProviderPreset } from '../../../shared/constants';
+import { API_PROVIDER_PRESETS } from '../../../shared/constants';
 
 interface ProfileEditDialogProps {
   /** Whether the dialog is open */
@@ -46,6 +46,334 @@ interface ProfileEditDialogProps {
   /** Optional profile for edit mode (undefined = create mode) */
   profile?: APIProfile;
 }
+
+// ============================================================================
+// Sub-components for provider-specific fields
+// ============================================================================
+
+interface BedrockCredentialsFieldsProps {
+  awsRegion: string;
+  awsProfile: string;
+  awsRegionError: string | null;
+  onAwsRegionChange: (value: string) => void;
+  onAwsProfileChange: (value: string) => void;
+}
+
+function BedrockCredentialsFields({
+  awsRegion,
+  awsProfile,
+  awsRegionError,
+  onAwsRegionChange,
+  onAwsProfileChange
+}: BedrockCredentialsFieldsProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {/* AWS Region field (required) */}
+      <div className="space-y-2">
+        <Label htmlFor="aws-region">
+          {t('settings:apiProfiles.fields.awsRegion')} <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="aws-region"
+          placeholder={t('settings:apiProfiles.placeholders.awsRegion')}
+          value={awsRegion}
+          onChange={(e) => onAwsRegionChange(e.target.value)}
+          className={awsRegionError ? 'border-destructive' : ''}
+        />
+        {awsRegionError && <p className="text-sm text-destructive">{awsRegionError}</p>}
+        <p className="text-xs text-muted-foreground">
+          {t('settings:apiProfiles.hints.awsRegion')}
+        </p>
+      </div>
+
+      {/* AWS Profile field (optional) */}
+      <div className="space-y-2">
+        <Label htmlFor="aws-profile">
+          {t('settings:apiProfiles.fields.awsProfile')}
+        </Label>
+        <Input
+          id="aws-profile"
+          placeholder={t('settings:apiProfiles.placeholders.awsProfile')}
+          value={awsProfile}
+          onChange={(e) => onAwsProfileChange(e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          {t('settings:apiProfiles.hints.awsProfile')}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+interface ApiCredentialsFieldsProps {
+  baseUrl: string;
+  apiKey: string;
+  urlError: string | null;
+  keyError: string | null;
+  isEditMode: boolean;
+  isChangingApiKey: boolean;
+  profile?: APIProfile;
+  baseUrlInputRef: React.RefObject<HTMLInputElement | null>;
+  onBaseUrlChange: (value: string) => void;
+  onApiKeyChange: (value: string) => void;
+  onStartChangingKey: () => void;
+  onCancelChangingKey: () => void;
+}
+
+function ApiCredentialsFields({
+  baseUrl,
+  apiKey,
+  urlError,
+  keyError,
+  isEditMode,
+  isChangingApiKey,
+  profile,
+  baseUrlInputRef,
+  onBaseUrlChange,
+  onApiKeyChange,
+  onStartChangingKey,
+  onCancelChangingKey
+}: ApiCredentialsFieldsProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {/* Base URL field (required) */}
+      <div className="space-y-2">
+        <Label htmlFor="profile-url">
+          {t('settings:apiProfiles.fields.baseUrl')} <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="profile-url"
+          placeholder={t('settings:apiProfiles.placeholders.baseUrl')}
+          value={baseUrl}
+          ref={baseUrlInputRef}
+          onChange={(e) => onBaseUrlChange(e.target.value)}
+          className={urlError ? 'border-destructive' : ''}
+        />
+        {urlError && <p className="text-sm text-destructive">{urlError}</p>}
+        <p className="text-xs text-muted-foreground">
+          {t('settings:apiProfiles.hints.baseUrl')}
+        </p>
+      </div>
+
+      {/* API Key field (required for create, masked in edit mode) */}
+      <div className="space-y-2">
+        <Label htmlFor="profile-key">
+          {t('settings:apiProfiles.fields.apiKey')} <span className="text-destructive">*</span>
+        </Label>
+        {isEditMode && !isChangingApiKey && profile ? (
+          // Edit mode: show masked API key
+          <div className="flex items-center gap-2">
+            <Input
+              id="profile-key"
+              value={maskApiKey(profile.apiKey)}
+              disabled
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onStartChangingKey}
+            >
+              {t('settings:apiProfiles.actions.changeKey')}
+            </Button>
+          </div>
+        ) : (
+          // Create mode or changing key: show password input
+          <>
+            <Input
+              id="profile-key"
+              type="password"
+              placeholder={t('settings:apiProfiles.placeholders.apiKey')}
+              value={apiKey}
+              onChange={(e) => onApiKeyChange(e.target.value)}
+              className={keyError ? 'border-destructive' : ''}
+            />
+            {isEditMode && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onCancelChangingKey}
+              >
+                {t('settings:apiProfiles.actions.cancelKeyChange')}
+              </Button>
+            )}
+          </>
+        )}
+        {keyError && <p className="text-sm text-destructive">{keyError}</p>}
+      </div>
+    </div>
+  );
+}
+
+interface BedrockModelFieldsProps {
+  defaultModel: string;
+  haikuModel: string;
+  sonnetModel: string;
+  opusModel: string;
+  onDefaultModelChange: (value: string) => void;
+  onHaikuModelChange: (value: string) => void;
+  onSonnetModelChange: (value: string) => void;
+  onOpusModelChange: (value: string) => void;
+}
+
+function BedrockModelFields({
+  defaultModel,
+  haikuModel,
+  sonnetModel,
+  opusModel,
+  onDefaultModelChange,
+  onHaikuModelChange,
+  onSonnetModelChange,
+  onOpusModelChange
+}: BedrockModelFieldsProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-2">
+        <Label htmlFor="model-default" className="text-sm text-muted-foreground">
+          {t('settings:apiProfiles.models.defaultLabel')}
+        </Label>
+        <Input
+          id="model-default"
+          placeholder={t('settings:apiProfiles.bedrock.modelPlaceholder')}
+          value={defaultModel}
+          onChange={(e) => onDefaultModelChange(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="model-haiku" className="text-sm text-muted-foreground">
+          {t('settings:apiProfiles.models.haikuLabel')}
+        </Label>
+        <Input
+          id="model-haiku"
+          placeholder={t('settings:apiProfiles.bedrock.haikuPlaceholder')}
+          value={haikuModel}
+          onChange={(e) => onHaikuModelChange(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="model-sonnet" className="text-sm text-muted-foreground">
+          {t('settings:apiProfiles.models.sonnetLabel')}
+        </Label>
+        <Input
+          id="model-sonnet"
+          placeholder={t('settings:apiProfiles.bedrock.sonnetPlaceholder')}
+          value={sonnetModel}
+          onChange={(e) => onSonnetModelChange(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="model-opus" className="text-sm text-muted-foreground">
+          {t('settings:apiProfiles.models.opusLabel')}
+        </Label>
+        <Input
+          id="model-opus"
+          placeholder={t('settings:apiProfiles.bedrock.opusPlaceholder')}
+          value={opusModel}
+          onChange={(e) => onOpusModelChange(e.target.value)}
+        />
+      </div>
+    </div>
+  );
+}
+
+interface ApiModelFieldsProps {
+  defaultModel: string;
+  haikuModel: string;
+  sonnetModel: string;
+  opusModel: string;
+  baseUrl: string;
+  apiKey: string;
+  onDefaultModelChange: (value: string) => void;
+  onHaikuModelChange: (value: string) => void;
+  onSonnetModelChange: (value: string) => void;
+  onOpusModelChange: (value: string) => void;
+}
+
+function ApiModelFields({
+  defaultModel,
+  haikuModel,
+  sonnetModel,
+  opusModel,
+  baseUrl,
+  apiKey,
+  onDefaultModelChange,
+  onHaikuModelChange,
+  onSonnetModelChange,
+  onOpusModelChange
+}: ApiModelFieldsProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-2">
+        <Label htmlFor="model-default" className="text-sm text-muted-foreground">
+          {t('settings:apiProfiles.models.defaultLabel')}
+        </Label>
+        <ModelSearchableSelect
+          value={defaultModel}
+          onChange={onDefaultModelChange}
+          placeholder={t('settings:apiProfiles.models.defaultPlaceholder')}
+          baseUrl={baseUrl}
+          apiKey={apiKey}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="model-haiku" className="text-sm text-muted-foreground">
+          {t('settings:apiProfiles.models.haikuLabel')}
+        </Label>
+        <ModelSearchableSelect
+          value={haikuModel}
+          onChange={onHaikuModelChange}
+          placeholder={t('settings:apiProfiles.models.haikuPlaceholder')}
+          baseUrl={baseUrl}
+          apiKey={apiKey}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="model-sonnet" className="text-sm text-muted-foreground">
+          {t('settings:apiProfiles.models.sonnetLabel')}
+        </Label>
+        <ModelSearchableSelect
+          value={sonnetModel}
+          onChange={onSonnetModelChange}
+          placeholder={t('settings:apiProfiles.models.sonnetPlaceholder')}
+          baseUrl={baseUrl}
+          apiKey={apiKey}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="model-opus" className="text-sm text-muted-foreground">
+          {t('settings:apiProfiles.models.opusLabel')}
+        </Label>
+        <ModelSearchableSelect
+          value={opusModel}
+          onChange={onOpusModelChange}
+          placeholder={t('settings:apiProfiles.models.opusPlaceholder')}
+          baseUrl={baseUrl}
+          apiKey={apiKey}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Main component
+// ============================================================================
 
 export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: ProfileEditDialogProps) {
   const { t } = useTranslation();
@@ -72,13 +400,13 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
   const [sonnetModel, setSonnetModel] = useState('');
   const [opusModel, setOpusModel] = useState('');
   const [presetId, setPresetId] = useState<string>('');
-  // Bedrock-specific state
+
+  // Provider type state
   const [providerType, setProviderType] = useState<APIProviderType>('api');
   const [awsRegion, setAwsRegion] = useState('');
   const [awsProfile, setAwsProfile] = useState('');
-  const [awsRegionError, setAwsRegionError] = useState<string | null>(null);
 
-  // Check if current profile is Bedrock
+  // Derived state
   const isBedrock = providerType === 'bedrock';
 
   // API key change state (for edit mode)
@@ -88,6 +416,7 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
   const [nameError, setNameError] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [keyError, setKeyError] = useState<string | null>(null);
+  const [awsRegionError, setAwsRegionError] = useState<string | null>(null);
 
   // AbortController ref for test connection cleanup
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -116,8 +445,6 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
   }, []);
 
   // Reset form and pre-populate when dialog opens
-  // Note: Only reset when dialog opens/closes, not when profile prop changes
-  // This prevents race conditions if user rapidly clicks edit on different profiles
   useEffect(() => {
     if (open) {
       if (isEditMode && profile) {
@@ -131,49 +458,67 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
         setOpusModel(profile.models?.opus || '');
         setIsChangingApiKey(false);
         setPresetId('');
-        // Bedrock-specific fields
         setProviderType(profile.providerType || 'api');
         setAwsRegion(profile.awsRegion || '');
         setAwsProfile(profile.awsProfile || '');
       } else {
         // Reset to empty form for create mode
-        setName('');
-        setBaseUrl('');
-        setApiKey('');
-        setDefaultModel('');
-        setHaikuModel('');
-        setSonnetModel('');
-        setOpusModel('');
-        setIsChangingApiKey(false);
-        setPresetId('');
-        // Bedrock-specific fields
-        setProviderType('api');
-        setAwsRegion('');
-        setAwsProfile('');
+        resetFormToDefaults();
       }
       // Clear validation errors
-      setNameError(null);
-      setUrlError(null);
-      setKeyError(null);
-      setAwsRegionError(null);
+      clearAllErrors();
     } else {
       // Clear test result display when dialog closes
       setShowTestResult(false);
     }
   }, [open]);
 
+  // Helper to reset form to defaults
+  const resetFormToDefaults = () => {
+    setName('');
+    setBaseUrl('');
+    setApiKey('');
+    setDefaultModel('');
+    setHaikuModel('');
+    setSonnetModel('');
+    setOpusModel('');
+    setIsChangingApiKey(false);
+    setPresetId('');
+    setProviderType('api');
+    setAwsRegion('');
+    setAwsProfile('');
+  };
+
+  // Helper to clear all validation errors
+  const clearAllErrors = () => {
+    setNameError(null);
+    setUrlError(null);
+    setKeyError(null);
+    setAwsRegionError(null);
+  };
+
+  // Helper to reset model values
+  const resetModelValues = () => {
+    setDefaultModel('');
+    setHaikuModel('');
+    setSonnetModel('');
+    setOpusModel('');
+  };
+
   const applyPreset = (id: string) => {
     const preset = API_PROVIDER_PRESETS.find((item) => item.id === id);
     if (!preset) return;
+
+    const previousPresetId = presetId;
     setPresetId(id);
 
     if (preset.isBedrock) {
       // Bedrock preset - set AWS-specific fields
       setProviderType('bedrock');
-      setBaseUrl(''); // Bedrock doesn't use base URL
-      setApiKey(''); // Bedrock doesn't use API key
+      setBaseUrl('');
+      setApiKey('');
       setAwsRegion(preset.defaultRegion || 'us-east-1');
-      // Apply default model mappings
+      // Apply default model mappings for Bedrock
       if (preset.defaultModels) {
         setDefaultModel(preset.defaultModels.default || '');
         setHaikuModel(preset.defaultModels.haiku || '');
@@ -186,6 +531,13 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
       setBaseUrl(preset.baseUrl);
       setAwsRegion('');
       setAwsProfile('');
+
+      // Reset model values when switching from Bedrock to API in create mode
+      // This prevents Bedrock model IDs from being used with API providers
+      const previousPreset = API_PROVIDER_PRESETS.find((item) => item.id === previousPresetId);
+      if (!isEditMode && previousPreset?.isBedrock) {
+        resetModelValues();
+      }
     }
 
     if (!name.trim()) {
@@ -193,11 +545,11 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
     }
   };
 
-  // Validate form
+  // Validate form based on provider type
   const validateForm = (): boolean => {
     let isValid = true;
 
-    // Name validation
+    // Name validation (common)
     if (!name.trim()) {
       setNameError(t('settings:apiProfiles.validation.nameRequired'));
       isValid = false;
@@ -206,22 +558,19 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
     }
 
     if (isBedrock) {
-      // Bedrock validation - requires AWS Region
+      // Bedrock validation
       if (!awsRegion.trim()) {
         setAwsRegionError(t('settings:apiProfiles.validation.awsRegionRequired'));
         isValid = false;
       } else {
         setAwsRegionError(null);
       }
-      // Clear API-specific errors
       setUrlError(null);
       setKeyError(null);
     } else {
       // Standard API validation
-      // Clear Bedrock-specific errors
       setAwsRegionError(null);
 
-      // Base URL validation
       if (!baseUrl.trim()) {
         setUrlError(t('settings:apiProfiles.validation.baseUrlRequired'));
         isValid = false;
@@ -232,7 +581,6 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
         setUrlError(null);
       }
 
-      // API Key validation (only in create mode or when changing key in edit mode)
       if (!isEditMode || isChangingApiKey) {
         if (!apiKey.trim()) {
           setKeyError(t('settings:apiProfiles.validation.apiKeyRequired'));
@@ -251,14 +599,12 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
     return isValid;
   };
 
-  // Handle test connection
+  // Handle test connection (API only)
   const handleTestConnection = async () => {
-    // Determine API key to use for testing
     const apiKeyForTest = isEditMode && !isChangingApiKey && profile
       ? profile.apiKey
       : apiKey;
 
-    // Basic validation before testing
     if (!baseUrl.trim()) {
       setUrlError(t('settings:apiProfiles.validation.baseUrlRequired'));
       return;
@@ -268,54 +614,65 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
       return;
     }
 
-    // Create AbortController for this test
     abortControllerRef.current = new AbortController();
-
     await testConnection(baseUrl.trim(), apiKeyForTest.trim(), abortControllerRef.current.signal);
   };
 
   // Check if form has minimum required fields for test connection
   const isFormValidForTest = () => {
-    // Bedrock doesn't support test connection via API (uses AWS credentials)
-    if (isBedrock) {
-      return false;
-    }
-    if (!name.trim() || !baseUrl.trim()) {
-      return false;
-    }
-    // In create mode or when changing key, need apiKey
+    if (isBedrock) return false;
+    if (!name.trim() || !baseUrl.trim()) return false;
     if (!isEditMode || isChangingApiKey) {
       return apiKey.trim().length > 0;
     }
-    // In edit mode without changing key, existing profile has apiKey
     return true;
+  };
+
+  // Build profile data for save
+  const buildProfileData = (): ProfileFormData => {
+    const data: ProfileFormData = {
+      name: name.trim(),
+      providerType,
+      baseUrl: isBedrock ? '' : baseUrl.trim(),
+      apiKey: isBedrock ? '' : apiKey.trim(),
+    };
+
+    if (isBedrock) {
+      data.awsRegion = awsRegion.trim();
+      data.awsProfile = awsProfile.trim() || undefined;
+    }
+
+    if (defaultModel || haikuModel || sonnetModel || opusModel) {
+      data.models = {};
+      if (defaultModel) data.models.default = defaultModel.trim();
+      if (haikuModel) data.models.haiku = haikuModel.trim();
+      if (sonnetModel) data.models.sonnet = sonnetModel.trim();
+      if (opusModel) data.models.opus = opusModel.trim();
+    }
+
+    return data;
   };
 
   // Handle save
   const handleSave = async () => {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     if (isEditMode && profile) {
       // Update existing profile
       const updatedProfile: APIProfile = {
         ...profile,
         name: name.trim(),
-        providerType: providerType,
+        providerType,
         baseUrl: isBedrock ? '' : baseUrl.trim(),
-        // Only update API key if user is changing it (and not Bedrock)
         ...(isChangingApiKey && !isBedrock && { apiKey: apiKey.trim() }),
-        // Bedrock-specific fields
         ...(isBedrock ? {
-          apiKey: '', // Clear API key for Bedrock
+          apiKey: '',
           awsRegion: awsRegion.trim(),
           awsProfile: awsProfile.trim() || undefined
         } : {
           awsRegion: undefined,
           awsProfile: undefined
         }),
-        // Update models if provided
         ...(defaultModel || haikuModel || sonnetModel || opusModel ? {
           models: {
             ...(defaultModel && { default: defaultModel.trim() }),
@@ -325,53 +682,33 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
           }
         } : { models: undefined })
       };
+
       const success = await updateProfile(updatedProfile);
       if (success) {
         toast({
           title: t('settings:apiProfiles.toast.update.title'),
-          description: t('settings:apiProfiles.toast.update.description', {
-            name: name.trim()
-          }),
+          description: t('settings:apiProfiles.toast.update.description', { name: name.trim() }),
         });
         onOpenChange(false);
         onSaved?.();
       }
     } else {
       // Create new profile
-      const profileData: ProfileFormData = {
-        name: name.trim(),
-        providerType: providerType,
-        baseUrl: isBedrock ? '' : baseUrl.trim(),
-        apiKey: isBedrock ? '' : apiKey.trim(),
-        // Bedrock-specific fields
-        ...(isBedrock && {
-          awsRegion: awsRegion.trim(),
-          awsProfile: awsProfile.trim() || undefined
-        })
-      };
-
-      // Add optional models if provided
-      if (defaultModel || haikuModel || sonnetModel || opusModel) {
-        profileData.models = {};
-        if (defaultModel) profileData.models.default = defaultModel.trim();
-        if (haikuModel) profileData.models.haiku = haikuModel.trim();
-        if (sonnetModel) profileData.models.sonnet = sonnetModel.trim();
-        if (opusModel) profileData.models.opus = opusModel.trim();
-      }
-
+      const profileData = buildProfileData();
       const success = await saveProfile(profileData);
       if (success) {
         toast({
           title: t('settings:apiProfiles.toast.create.title'),
-          description: t('settings:apiProfiles.toast.create.description', {
-            name: name.trim()
-          }),
+          description: t('settings:apiProfiles.toast.create.description', { name: name.trim() }),
         });
         onOpenChange(false);
         onSaved?.();
       }
     }
   };
+
+  // Get the effective API key for model selects (in edit mode without changing key, use profile's key)
+  const effectiveApiKey = isEditMode && !isChangingApiKey && profile ? profile.apiKey : apiKey;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -391,8 +728,8 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Name and Preset row */}
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Name field (required) */}
             <div className={`space-y-2 ${isEditMode ? 'md:col-span-2' : ''}`}>
               <Label htmlFor="profile-name">
                 {t('settings:apiProfiles.fields.name')} <span className="text-destructive">*</span>
@@ -434,121 +771,37 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
             )}
           </div>
 
+          {/* Provider-specific credentials fields */}
           {isBedrock ? (
-            /* Bedrock-specific fields */
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* AWS Region field (required) */}
-              <div className="space-y-2">
-                <Label htmlFor="aws-region">
-                  {t('settings:apiProfiles.fields.awsRegion')} <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="aws-region"
-                  placeholder={t('settings:apiProfiles.placeholders.awsRegion')}
-                  value={awsRegion}
-                  onChange={(e) => setAwsRegion(e.target.value)}
-                  className={awsRegionError ? 'border-destructive' : ''}
-                />
-                {awsRegionError && <p className="text-sm text-destructive">{awsRegionError}</p>}
-                <p className="text-xs text-muted-foreground">
-                  {t('settings:apiProfiles.hints.awsRegion')}
-                </p>
-              </div>
-
-              {/* AWS Profile field (optional) */}
-              <div className="space-y-2">
-                <Label htmlFor="aws-profile">
-                  {t('settings:apiProfiles.fields.awsProfile')}
-                </Label>
-                <Input
-                  id="aws-profile"
-                  placeholder={t('settings:apiProfiles.placeholders.awsProfile')}
-                  value={awsProfile}
-                  onChange={(e) => setAwsProfile(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t('settings:apiProfiles.hints.awsProfile')}
-                </p>
-              </div>
-            </div>
+            <BedrockCredentialsFields
+              awsRegion={awsRegion}
+              awsProfile={awsProfile}
+              awsRegionError={awsRegionError}
+              onAwsRegionChange={setAwsRegion}
+              onAwsProfileChange={setAwsProfile}
+            />
           ) : (
-            /* Standard API fields */
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Base URL field (required) */}
-              <div className="space-y-2">
-                <Label htmlFor="profile-url">
-                  {t('settings:apiProfiles.fields.baseUrl')} <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="profile-url"
-                  placeholder={t('settings:apiProfiles.placeholders.baseUrl')}
-                  value={baseUrl}
-                  ref={baseUrlInputRef}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  className={urlError ? 'border-destructive' : ''}
-                />
-                {urlError && <p className="text-sm text-destructive">{urlError}</p>}
-                <p className="text-xs text-muted-foreground">
-                  {t('settings:apiProfiles.hints.baseUrl')}
-                </p>
-              </div>
-
-              {/* API Key field (required for create, masked in edit mode) */}
-              <div className="space-y-2">
-                <Label htmlFor="profile-key">
-                  {t('settings:apiProfiles.fields.apiKey')} <span className="text-destructive">*</span>
-                </Label>
-                {isEditMode && !isChangingApiKey && profile ? (
-                  // Edit mode: show masked API key
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="profile-key"
-                      value={maskApiKey(profile.apiKey)}
-                      disabled
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsChangingApiKey(true)}
-                    >
-                      {t('settings:apiProfiles.actions.changeKey')}
-                    </Button>
-                  </div>
-                ) : (
-                  // Create mode or changing key: show password input
-                  <>
-                    <Input
-                      id="profile-key"
-                      type="password"
-                      placeholder={t('settings:apiProfiles.placeholders.apiKey')}
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      className={keyError ? 'border-destructive' : ''}
-                    />
-                    {isEditMode && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setIsChangingApiKey(false);
-                          setApiKey('');
-                          setKeyError(null);
-                        }}
-                      >
-                        {t('settings:apiProfiles.actions.cancelKeyChange')}
-                      </Button>
-                    )}
-                  </>
-                )}
-                {keyError && <p className="text-sm text-destructive">{keyError}</p>}
-              </div>
-            </div>
+            <ApiCredentialsFields
+              baseUrl={baseUrl}
+              apiKey={apiKey}
+              urlError={urlError}
+              keyError={keyError}
+              isEditMode={isEditMode}
+              isChangingApiKey={isChangingApiKey}
+              profile={profile}
+              baseUrlInputRef={baseUrlInputRef}
+              onBaseUrlChange={setBaseUrl}
+              onApiKeyChange={setApiKey}
+              onStartChangingKey={() => setIsChangingApiKey(true)}
+              onCancelChangingKey={() => {
+                setIsChangingApiKey(false);
+                setApiKey('');
+                setKeyError(null);
+              }}
+            />
           )}
 
-          {/* Test Connection button - hidden for Bedrock, show info instead */}
+          {/* Test Connection / Auth Info */}
           {isBedrock ? (
             <div className="p-3 bg-muted/50 border rounded-lg">
               <p className="text-sm text-muted-foreground">
@@ -620,95 +873,31 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
                 : t('settings:apiProfiles.models.description')}
             </p>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="model-default" className="text-sm text-muted-foreground">
-                  {t('settings:apiProfiles.models.defaultLabel')}
-                </Label>
-                {isBedrock ? (
-                  <Input
-                    id="model-default"
-                    placeholder={t('settings:apiProfiles.bedrock.modelPlaceholder')}
-                    value={defaultModel}
-                    onChange={(e) => setDefaultModel(e.target.value)}
-                  />
-                ) : (
-                  <ModelSearchableSelect
-                    value={defaultModel}
-                    onChange={setDefaultModel}
-                    placeholder={t('settings:apiProfiles.models.defaultPlaceholder')}
-                    baseUrl={baseUrl}
-                    apiKey={isEditMode && !isChangingApiKey && profile ? profile.apiKey : apiKey}
-                  />
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="model-haiku" className="text-sm text-muted-foreground">
-                  {t('settings:apiProfiles.models.haikuLabel')}
-                </Label>
-                {isBedrock ? (
-                  <Input
-                    id="model-haiku"
-                    placeholder={t('settings:apiProfiles.bedrock.haikuPlaceholder')}
-                    value={haikuModel}
-                    onChange={(e) => setHaikuModel(e.target.value)}
-                  />
-                ) : (
-                  <ModelSearchableSelect
-                    value={haikuModel}
-                    onChange={setHaikuModel}
-                    placeholder={t('settings:apiProfiles.models.haikuPlaceholder')}
-                    baseUrl={baseUrl}
-                    apiKey={isEditMode && !isChangingApiKey && profile ? profile.apiKey : apiKey}
-                  />
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="model-sonnet" className="text-sm text-muted-foreground">
-                  {t('settings:apiProfiles.models.sonnetLabel')}
-                </Label>
-                {isBedrock ? (
-                  <Input
-                    id="model-sonnet"
-                    placeholder={t('settings:apiProfiles.bedrock.sonnetPlaceholder')}
-                    value={sonnetModel}
-                    onChange={(e) => setSonnetModel(e.target.value)}
-                  />
-                ) : (
-                  <ModelSearchableSelect
-                    value={sonnetModel}
-                    onChange={setSonnetModel}
-                    placeholder={t('settings:apiProfiles.models.sonnetPlaceholder')}
-                    baseUrl={baseUrl}
-                    apiKey={isEditMode && !isChangingApiKey && profile ? profile.apiKey : apiKey}
-                  />
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="model-opus" className="text-sm text-muted-foreground">
-                  {t('settings:apiProfiles.models.opusLabel')}
-                </Label>
-                {isBedrock ? (
-                  <Input
-                    id="model-opus"
-                    placeholder={t('settings:apiProfiles.bedrock.opusPlaceholder')}
-                    value={opusModel}
-                    onChange={(e) => setOpusModel(e.target.value)}
-                  />
-                ) : (
-                  <ModelSearchableSelect
-                    value={opusModel}
-                    onChange={setOpusModel}
-                    placeholder={t('settings:apiProfiles.models.opusPlaceholder')}
-                    baseUrl={baseUrl}
-                    apiKey={isEditMode && !isChangingApiKey && profile ? profile.apiKey : apiKey}
-                  />
-                )}
-              </div>
-            </div>
+            {isBedrock ? (
+              <BedrockModelFields
+                defaultModel={defaultModel}
+                haikuModel={haikuModel}
+                sonnetModel={sonnetModel}
+                opusModel={opusModel}
+                onDefaultModelChange={setDefaultModel}
+                onHaikuModelChange={setHaikuModel}
+                onSonnetModelChange={setSonnetModel}
+                onOpusModelChange={setOpusModel}
+              />
+            ) : (
+              <ApiModelFields
+                defaultModel={defaultModel}
+                haikuModel={haikuModel}
+                sonnetModel={sonnetModel}
+                opusModel={opusModel}
+                baseUrl={baseUrl}
+                apiKey={effectiveApiKey}
+                onDefaultModelChange={setDefaultModel}
+                onHaikuModelChange={setHaikuModel}
+                onSonnetModelChange={setSonnetModel}
+                onOpusModelChange={setOpusModel}
+              />
+            )}
           </div>
 
           {/* General error display */}
