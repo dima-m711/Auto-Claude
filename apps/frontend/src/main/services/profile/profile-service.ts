@@ -284,7 +284,10 @@ export async function updateProfile(input: UpdateProfileInput): Promise<APIProfi
  * AWS Bedrock Environment Variable Mapping:
  * - CLAUDE_CODE_USE_BEDROCK=1 (enables Bedrock mode)
  * - profile.awsRegion → AWS_REGION
- * - profile.awsProfile → AWS_PROFILE (optional)
+ * - profile.awsProfile → AWS_PROFILE (Option A: SSO/named profile)
+ * - profile.awsAccessKeyId → AWS_ACCESS_KEY_ID (Option B: access keys)
+ * - profile.awsSecretAccessKey → AWS_SECRET_ACCESS_KEY (Option B: access keys)
+ * - profile.awsSessionToken → AWS_SESSION_TOKEN (Option B: session token, optional)
  * - profile.models.default → ANTHROPIC_MODEL
  * - profile.models.haiku → ANTHROPIC_DEFAULT_HAIKU_MODEL
  * - profile.models.sonnet → ANTHROPIC_DEFAULT_SONNET_MODEL
@@ -321,7 +324,13 @@ export async function getAPIProfileEnv(): Promise<Record<string, string>> {
     envVars = {
       CLAUDE_CODE_USE_BEDROCK: '1',
       AWS_REGION: profile.awsRegion || '',
+      // Option A: AWS Profile (SSO/named profile)
       AWS_PROFILE: profile.awsProfile || '',
+      // Option B: AWS Access Keys
+      AWS_ACCESS_KEY_ID: profile.awsAccessKeyId || '',
+      AWS_SECRET_ACCESS_KEY: profile.awsSecretAccessKey || '',
+      AWS_SESSION_TOKEN: profile.awsSessionToken || '',
+      // Model mappings
       ANTHROPIC_MODEL: profile.models?.default || '',
       ANTHROPIC_DEFAULT_HAIKU_MODEL: profile.models?.haiku || '',
       ANTHROPIC_DEFAULT_SONNET_MODEL: profile.models?.sonnet || '',

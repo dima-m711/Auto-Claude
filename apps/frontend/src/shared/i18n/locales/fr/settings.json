@@ -68,7 +68,10 @@
       "baseUrl": "URL de base",
       "apiKey": "Clé API",
       "awsRegion": "Région AWS",
-      "awsProfile": "Profil AWS (Optionnel)"
+      "awsProfile": "Profil AWS (Optionnel)",
+      "awsAccessKeyId": "ID de clé d'accès",
+      "awsSecretAccessKey": "Clé d'accès secrète",
+      "awsSessionToken": "Jeton de session (Optionnel)"
     },
     "placeholders": {
       "name": "Mon API personnalisée",
@@ -76,13 +79,17 @@
       "baseUrl": "https://api.anthropic.com",
       "apiKey": "sk-ant-...",
       "awsRegion": "us-east-1",
-      "awsProfile": "default"
+      "awsProfile": "default",
+      "awsAccessKeyId": "AKIA...",
+      "awsSecretAccessKey": "Votre clé d'accès secrète",
+      "awsSessionToken": "Jeton de session optionnel"
     },
     "hints": {
       "preset": "Les préréglages remplissent l'URL de base ; vous devez toujours coller votre clé API.",
       "baseUrl": "Exemple : https://api.anthropic.com ou http://localhost:8080",
       "awsRegion": "Région AWS où Bedrock est disponible (ex. : us-east-1, us-west-2)",
-      "awsProfile": "Profil nommé depuis ~/.aws/credentials ou ~/.aws/config pour SSO"
+      "awsProfile": "Profil nommé depuis ~/.aws/credentials ou ~/.aws/config pour SSO",
+      "awsSessionToken": "Requis pour les identifiants temporaires (ex. : depuis STS AssumeRole)"
     },
     "validation": {
       "nameRequired": "Le nom est requis",
@@ -118,7 +125,8 @@
       "opusPlaceholder": "ex. : claude-opus-4-5-20251101"
     },
     "bedrock": {
-      "authInfo": "AWS Bedrock utilise vos identifiants AWS locaux (via AWS CLI, variables d'environnement ou rôles IAM). Exécutez 'aws sso login --profile <profil>' pour vous authentifier si vous utilisez SSO.",
+      "authInfo": "AWS Bedrock utilise vos identifiants AWS locaux. Utilisez un profil AWS (pour SSO/CLI) ou des clés d'accès ci-dessous.",
+      "orAccessKeys": "Ou utiliser des clés d'accès",
       "modelsTitle": "Configuration des modèles Bedrock",
       "modelsDescription": "Les ID de modèles Bedrock sont pré-configurés. Modifiez uniquement si nécessaire.",
       "modelPlaceholder": "ex. : us.anthropic.claude-sonnet-4-5-20250929-v1:0",

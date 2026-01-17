@@ -54,22 +54,34 @@ interface ProfileEditDialogProps {
 interface BedrockCredentialsFieldsProps {
   awsRegion: string;
   awsProfile: string;
+  awsAccessKeyId: string;
+  awsSecretAccessKey: string;
+  awsSessionToken: string;
   awsRegionError: string | null;
   onAwsRegionChange: (value: string) => void;
   onAwsProfileChange: (value: string) => void;
+  onAwsAccessKeyIdChange: (value: string) => void;
+  onAwsSecretAccessKeyChange: (value: string) => void;
+  onAwsSessionTokenChange: (value: string) => void;
 }
 
 function BedrockCredentialsFields({
   awsRegion,
   awsProfile,
+  awsAccessKeyId,
+  awsSecretAccessKey,
+  awsSessionToken,
   awsRegionError,
   onAwsRegionChange,
-  onAwsProfileChange
+  onAwsProfileChange,
+  onAwsAccessKeyIdChange,
+  onAwsSecretAccessKeyChange,
+  onAwsSessionTokenChange
 }: BedrockCredentialsFieldsProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="space-y-4">
       {/* AWS Region field (required) */}
       <div className="space-y-2">
         <Label htmlFor="aws-region">
@@ -88,7 +100,7 @@ function BedrockCredentialsFields({
         </p>
       </div>
 
-      {/* AWS Profile field (optional) */}
+      {/* Option A: AWS Profile (SSO/named profile) */}
       <div className="space-y-2">
         <Label htmlFor="aws-profile">
           {t('settings:apiProfiles.fields.awsProfile')}
@@ -101,6 +113,62 @@ function BedrockCredentialsFields({
         />
         <p className="text-xs text-muted-foreground">
           {t('settings:apiProfiles.hints.awsProfile')}
+        </p>
+      </div>
+
+      {/* Divider */}
+      <div className="relative py-2">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">
+            {t('settings:apiProfiles.bedrock.orAccessKeys')}
+          </span>
+        </div>
+      </div>
+
+      {/* Option B: AWS Access Keys */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="aws-access-key-id">
+            {t('settings:apiProfiles.fields.awsAccessKeyId')}
+          </Label>
+          <Input
+            id="aws-access-key-id"
+            placeholder={t('settings:apiProfiles.placeholders.awsAccessKeyId')}
+            value={awsAccessKeyId}
+            onChange={(e) => onAwsAccessKeyIdChange(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="aws-secret-access-key">
+            {t('settings:apiProfiles.fields.awsSecretAccessKey')}
+          </Label>
+          <Input
+            id="aws-secret-access-key"
+            type="password"
+            placeholder={t('settings:apiProfiles.placeholders.awsSecretAccessKey')}
+            value={awsSecretAccessKey}
+            onChange={(e) => onAwsSecretAccessKeyChange(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="aws-session-token">
+          {t('settings:apiProfiles.fields.awsSessionToken')}
+        </Label>
+        <Input
+          id="aws-session-token"
+          type="password"
+          placeholder={t('settings:apiProfiles.placeholders.awsSessionToken')}
+          value={awsSessionToken}
+          onChange={(e) => onAwsSessionTokenChange(e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          {t('settings:apiProfiles.hints.awsSessionToken')}
         </p>
       </div>
     </div>
@@ -245,6 +313,10 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
   const [providerType, setProviderType] = useState<APIProviderType>('api');
   const [awsRegion, setAwsRegion] = useState('');
   const [awsProfile, setAwsProfile] = useState('');
+  // AWS Access Key authentication (Option B)
+  const [awsAccessKeyId, setAwsAccessKeyId] = useState('');
+  const [awsSecretAccessKey, setAwsSecretAccessKey] = useState('');
+  const [awsSessionToken, setAwsSessionToken] = useState('');
 
   // Derived state
   const isBedrock = providerType === 'bedrock';
@@ -301,6 +373,9 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
         setProviderType(profile.providerType || 'api');
         setAwsRegion(profile.awsRegion || '');
         setAwsProfile(profile.awsProfile || '');
+        setAwsAccessKeyId(profile.awsAccessKeyId || '');
+        setAwsSecretAccessKey(''); // Start empty - masked display shown instead
+        setAwsSessionToken(profile.awsSessionToken || '');
       } else {
         // Reset to empty form for create mode
         resetFormToDefaults();
@@ -327,6 +402,9 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
     setProviderType('api');
     setAwsRegion('');
     setAwsProfile('');
+    setAwsAccessKeyId('');
+    setAwsSecretAccessKey('');
+    setAwsSessionToken('');
   };
 
   // Helper to clear all validation errors
@@ -480,6 +558,9 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
     if (isBedrock) {
       data.awsRegion = awsRegion.trim();
       data.awsProfile = awsProfile.trim() || undefined;
+      data.awsAccessKeyId = awsAccessKeyId.trim() || undefined;
+      data.awsSecretAccessKey = awsSecretAccessKey.trim() || undefined;
+      data.awsSessionToken = awsSessionToken.trim() || undefined;
     }
 
     if (defaultModel || haikuModel || sonnetModel || opusModel) {
@@ -508,10 +589,16 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
         ...(isBedrock ? {
           apiKey: '',
           awsRegion: awsRegion.trim(),
-          awsProfile: awsProfile.trim() || undefined
+          awsProfile: awsProfile.trim() || undefined,
+          awsAccessKeyId: awsAccessKeyId.trim() || undefined,
+          awsSecretAccessKey: awsSecretAccessKey.trim() || undefined,
+          awsSessionToken: awsSessionToken.trim() || undefined
         } : {
           awsRegion: undefined,
-          awsProfile: undefined
+          awsProfile: undefined,
+          awsAccessKeyId: undefined,
+          awsSecretAccessKey: undefined,
+          awsSessionToken: undefined
         }),
         ...(defaultModel || haikuModel || sonnetModel || opusModel ? {
           models: {
@@ -640,9 +727,15 @@ export function ProfileEditDialog({ open, onOpenChange, onSaved, profile }: Prof
             <BedrockCredentialsFields
               awsRegion={awsRegion}
               awsProfile={awsProfile}
+              awsAccessKeyId={awsAccessKeyId}
+              awsSecretAccessKey={awsSecretAccessKey}
+              awsSessionToken={awsSessionToken}
               awsRegionError={awsRegionError}
               onAwsRegionChange={setAwsRegion}
               onAwsProfileChange={setAwsProfile}
+              onAwsAccessKeyIdChange={setAwsAccessKeyId}
+              onAwsSecretAccessKeyChange={setAwsSecretAccessKey}
+              onAwsSessionTokenChange={setAwsSessionToken}
             />
           ) : (
             <ApiCredentialsFields

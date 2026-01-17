@@ -29,8 +29,14 @@ export interface APIProfile {
   apiKey: string; // Full API key (never display in UI - use maskApiKey()) - empty for Bedrock
   /** AWS Region for Bedrock (e.g., 'us-east-1') - only used when providerType is 'bedrock' */
   awsRegion?: string;
-  /** AWS Profile name for Bedrock SSO/named profile authentication - only used when providerType is 'bedrock' */
+  /** AWS Profile name for Bedrock SSO/named profile authentication (Option A) - only used when providerType is 'bedrock' */
   awsProfile?: string;
+  /** AWS Access Key ID for Bedrock access key authentication (Option B) - only used when providerType is 'bedrock' */
+  awsAccessKeyId?: string;
+  /** AWS Secret Access Key for Bedrock access key authentication (Option B) - only used when providerType is 'bedrock' */
+  awsSecretAccessKey?: string;
+  /** AWS Session Token for Bedrock temporary credentials (Option B) - only used when providerType is 'bedrock' */
+  awsSessionToken?: string;
   models?: {
     // OPTIONAL - only specify models to override
     default?: string; // Maps to ANTHROPIC_MODEL
@@ -62,8 +68,14 @@ export interface ProfileFormData {
   apiKey: string; // Empty string for Bedrock
   /** AWS Region for Bedrock (e.g., 'us-east-1') */
   awsRegion?: string;
-  /** AWS Profile name for Bedrock SSO/named profile authentication */
+  /** AWS Profile name for Bedrock SSO/named profile authentication (Option A) */
   awsProfile?: string;
+  /** AWS Access Key ID for Bedrock access key authentication (Option B) */
+  awsAccessKeyId?: string;
+  /** AWS Secret Access Key for Bedrock access key authentication (Option B) */
+  awsSecretAccessKey?: string;
+  /** AWS Session Token for Bedrock temporary credentials (Option B) */
+  awsSessionToken?: string;
   models?: {
     default?: string;
     haiku?: string;

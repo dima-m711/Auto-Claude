@@ -68,7 +68,10 @@
       "baseUrl": "Base URL",
       "apiKey": "API Key",
       "awsRegion": "AWS Region",
-      "awsProfile": "AWS Profile (Optional)"
+      "awsProfile": "AWS Profile (Optional)",
+      "awsAccessKeyId": "Access Key ID",
+      "awsSecretAccessKey": "Secret Access Key",
+      "awsSessionToken": "Session Token (Optional)"
     },
     "placeholders": {
       "name": "My Custom API",
@@ -76,13 +79,17 @@
       "baseUrl": "https://api.anthropic.com",
       "apiKey": "sk-ant-...",
       "awsRegion": "us-east-1",
-      "awsProfile": "default"
+      "awsProfile": "default",
+      "awsAccessKeyId": "AKIA...",
+      "awsSecretAccessKey": "Your secret access key",
+      "awsSessionToken": "Optional session token"
     },
     "hints": {
       "preset": "Presets fill the base URL; you still need to paste your API key.",
       "baseUrl": "Example: https://api.anthropic.com or http://localhost:8080",
       "awsRegion": "AWS region where Bedrock is available (e.g., us-east-1, us-west-2)",
-      "awsProfile": "Named profile from ~/.aws/credentials or ~/.aws/config for SSO"
+      "awsProfile": "Named profile from ~/.aws/credentials or ~/.aws/config for SSO",
+      "awsSessionToken": "Required for temporary credentials (e.g., from STS AssumeRole)"
     },
     "validation": {
       "nameRequired": "Name is required",
@@ -118,7 +125,8 @@
       "opusPlaceholder": "e.g., claude-opus-4-5-20251101"
     },
     "bedrock": {
-      "authInfo": "AWS Bedrock uses your local AWS credentials (via AWS CLI, environment variables, or IAM roles). Run 'aws sso login --profile <profile>' to authenticate if using SSO.",
+      "authInfo": "AWS Bedrock uses your local AWS credentials. Use either an AWS Profile (for SSO/CLI) or Access Keys below.",
+      "orAccessKeys": "Or use Access Keys",
       "modelsTitle": "Bedrock Model Configuration",
       "modelsDescription": "Bedrock model IDs are pre-configured. Modify only if needed.",
       "modelPlaceholder": "e.g., us.anthropic.claude-sonnet-4-5-20250929-v1:0",
