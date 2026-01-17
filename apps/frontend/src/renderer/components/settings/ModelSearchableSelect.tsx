@@ -31,10 +31,10 @@ interface ModelSearchableSelectProps {
   onChange: (modelId: string) => void;
   /** Placeholder text when no model selected */
   placeholder?: string;
-  /** Base URL for API (used for caching key) */
-  baseUrl: string;
-  /** API key for authentication (used for caching key) */
-  apiKey: string;
+  /** Base URL for API (used for caching key). When empty, model discovery is skipped. */
+  baseUrl?: string;
+  /** API key for authentication (used for caching key). When empty, model discovery is skipped. */
+  apiKey?: string;
   /** Disabled state */
   disabled?: boolean;
   /** Additional CSS classes */
@@ -59,14 +59,18 @@ export function ModelSearchableSelect({
   value,
   onChange,
   placeholder,
-  baseUrl,
-  apiKey,
+  baseUrl = '',
+  apiKey = '',
   disabled = false,
   className
 }: ModelSearchableSelectProps) {
   const { t } = useTranslation();
   const resolvedPlaceholder = placeholder ?? t('settings:modelSelect.placeholder');
   const discoverModels = useSettingsStore((state) => state.discoverModels);
+
+  // Determine if model discovery should be skipped (no API credentials)
+  const skipModelDiscovery = !baseUrl.trim() || !apiKey.trim();
+
   // Dropdown open state
   const [isOpen, setIsOpen] = useState(false);
 
@@ -138,13 +142,13 @@ export function ModelSearchableSelect({
   /**
    * Handle dropdown open.
    * Triggers model fetch on first open.
-   * If model discovery is not supported, don't open dropdown - just allow typing.
+   * If model discovery is not supported or skipped, don't open dropdown - just allow typing.
    */
   const handleOpen = () => {
     if (disabled) return;
 
-    // If we already know model discovery isn't supported, don't open dropdown
-    if (modelDiscoveryNotSupported) {
+    // If model discovery should be skipped (no credentials) or isn't supported, don't open dropdown
+    if (skipModelDiscovery || modelDiscoveryNotSupported) {
       setIsManualInput(true);
       return;
     }
@@ -228,11 +232,11 @@ export function ModelSearchableSelect({
           }}
           onFocus={() => {
             // Only open dropdown if we have models or haven't tried fetching yet
-            if (!modelDiscoveryNotSupported) {
+            if (!skipModelDiscovery && !modelDiscoveryNotSupported) {
               handleOpen();
             }
           }}
-          placeholder={modelDiscoveryNotSupported
+          placeholder={(skipModelDiscovery || modelDiscoveryNotSupported)
             ? t('settings:modelSelect.placeholderManual')
             : resolvedPlaceholder}
           disabled={disabled}
@@ -242,7 +246,7 @@ export function ModelSearchableSelect({
         <div className="absolute right-0 top-0 h-full flex items-center px-3">
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : !modelDiscoveryNotSupported ? (
+          ) : !skipModelDiscovery && !modelDiscoveryNotSupported ? (
             <Button
               type="button"
               variant="ghost"
@@ -308,8 +312,8 @@ export function ModelSearchableSelect({
         </div>
       )}
 
-      {/* Info/error messages below input */}
-      {modelDiscoveryNotSupported && (
+      {/* Info/error messages below input - only show discovery message when it failed, not when skipped */}
+      {!skipModelDiscovery && modelDiscoveryNotSupported && (
         <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
           <Info className="h-3 w-3" />
           {t('settings:modelSelect.discoveryNotAvailable')}
