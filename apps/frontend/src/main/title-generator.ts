@@ -133,9 +133,6 @@ export class TitleGenerator extends EventEmitter {
       return null;
     }
 
-    const prompt = this.createTitlePrompt(description);
-    const script = this.createGenerationScript(prompt);
-
     debug('Generating title for description:', description.substring(0, 100) + '...');
 
     const autoBuildEnv = this.loadAutoBuildEnv();
@@ -152,6 +149,10 @@ export class TitleGenerator extends EventEmitter {
       hasApiProfileEnv: Object.keys(apiProfileEnv).length > 0,
       isBedrock: !!apiProfileEnv.CLAUDE_CODE_USE_BEDROCK
     });
+
+    const prompt = this.createTitlePrompt(description);
+    const haikuModel = apiProfileEnv.ANTHROPIC_DEFAULT_HAIKU_MODEL || 'claude-haiku-4-5';
+    const script = this.createGenerationScript(prompt, haikuModel);
 
     return new Promise((resolve) => {
       // Parse Python command to handle space-separated commands like "py -3"
@@ -241,9 +242,9 @@ Title:`;
   /**
    * Create the Python script to generate title using Claude Agent SDK
    */
-  private createGenerationScript(prompt: string): string {
-    // Escape the prompt for Python string - use JSON.stringify for safe escaping
+  private createGenerationScript(prompt: string, model: string): string {
     const escapedPrompt = JSON.stringify(prompt);
+    const escapedModel = JSON.stringify(model);
 
     return `
 import asyncio
@@ -255,10 +256,9 @@ async def generate_title():
 
         prompt = ${escapedPrompt}
 
-        # Create a minimal client for simple text generation (no tools needed)
         client = ClaudeSDKClient(
             options=ClaudeAgentOptions(
-                model="claude-haiku-4-5",
+                model=${escapedModel},
                 system_prompt="You generate short, concise task titles (3-7 words). Output ONLY the title, nothing else. No quotes, no explanation, no preamble.",
                 max_turns=1,
             )

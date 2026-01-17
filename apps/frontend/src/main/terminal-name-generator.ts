@@ -154,9 +154,6 @@ export class TerminalNameGenerator extends EventEmitter {
       return null;
     }
 
-    const prompt = this.createNamePrompt(command, cwd);
-    const script = this.createGenerationScript(prompt);
-
     debug('Generating terminal name for command:', command.substring(0, 100) + '...');
 
     const autoBuildEnv = this.loadAutoBuildEnv();
@@ -173,6 +170,10 @@ export class TerminalNameGenerator extends EventEmitter {
       hasApiProfileEnv: Object.keys(apiProfileEnv).length > 0,
       isBedrock: !!apiProfileEnv.CLAUDE_CODE_USE_BEDROCK
     });
+
+    const prompt = this.createNamePrompt(command, cwd);
+    const haikuModel = apiProfileEnv.ANTHROPIC_DEFAULT_HAIKU_MODEL || 'claude-haiku-4-5';
+    const script = this.createGenerationScript(prompt, haikuModel);
 
     return new Promise((resolve) => {
       // Use the venv Python where claude_agent_sdk is installed
@@ -272,9 +273,9 @@ Output ONLY the name (2-3 words), nothing else. Examples: "npm build", "git logs
   /**
    * Create the Python script to generate terminal name using Claude Agent SDK
    */
-  private createGenerationScript(prompt: string): string {
-    // Escape the prompt for Python string - use JSON.stringify for safe escaping
+  private createGenerationScript(prompt: string, model: string): string {
     const escapedPrompt = JSON.stringify(prompt);
+    const escapedModel = JSON.stringify(model);
 
     return `
 import asyncio
@@ -286,10 +287,9 @@ async def generate_name():
 
         prompt = ${escapedPrompt}
 
-        # Create a minimal client for simple text generation (no tools needed)
         client = ClaudeSDKClient(
             options=ClaudeAgentOptions(
-                model="claude-haiku-4-5",
+                model=${escapedModel},
                 system_prompt="You generate very short, concise terminal names (2-3 words MAX). Output ONLY the name, nothing else. No quotes, no explanation, no preamble. Keep it as short as possible while being descriptive.",
                 max_turns=1,
             )
