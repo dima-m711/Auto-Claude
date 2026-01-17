@@ -11,6 +11,7 @@ import { EventEmitter } from 'events';
 import { detectRateLimit, createSDKRateLimitInfo, getProfileEnv } from './rate-limit-detector';
 import { parsePythonCommand } from './python-detector';
 import { pythonEnvManager } from './python-env-manager';
+import { getAPIProfileEnv } from './services/profile';
 
 /**
  * Debug logging - only logs when DEBUG=true or in development mode
@@ -166,6 +167,13 @@ export class TerminalNameGenerator extends EventEmitter {
     // Get active Claude profile environment (CLAUDE_CONFIG_DIR if not default)
     const profileEnv = getProfileEnv();
 
+    // Get API profile environment (API key, base URL, or Bedrock config)
+    const apiProfileEnv = await getAPIProfileEnv();
+    debug('API profile environment loaded', {
+      hasApiProfileEnv: Object.keys(apiProfileEnv).length > 0,
+      isBedrock: !!apiProfileEnv.CLAUDE_CODE_USE_BEDROCK
+    });
+
     return new Promise((resolve) => {
       // Use the venv Python where claude_agent_sdk is installed
       const [pythonCommand, pythonBaseArgs] = parsePythonCommand(venvPythonPath);
@@ -175,6 +183,7 @@ export class TerminalNameGenerator extends EventEmitter {
           ...process.env,
           ...autoBuildEnv,
           ...profileEnv, // Include active Claude profile config
+          ...apiProfileEnv, // Include API profile config (API key/Bedrock)
           PYTHONUNBUFFERED: '1',
           PYTHONIOENCODING: 'utf-8',
           PYTHONUTF8: '1'
